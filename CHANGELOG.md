@@ -1,10 +1,22 @@
 # Changelog
 
+## [33.0.0] (2025-03-08)
+
+### New Tweak: Enhanced Target Info
+
+You guessed it, it enhances the target info.
+
+Current options:
+
+- Display Mounted status (default off): The tooltip shows the name of the mount and the unlock status.
+- Display Fashion Accessory status (default off): The tooltip shows the name of the fashion accessory and the unlock status.
+- Remove leading zero in HP under 10% (default off): For example, instead of 06.7%, 6.7% will be displayed. The format depends on the client language, not on the language set in Dalamud.
+
 ## [32.1.1] (2025-02-16)
 
 ### HaselTweaks
 
-- **Fixed:** ImGui window positions of this plugin should no longer reset every game session. Noob mistake to think C# would work correctly. Sorry about that.
+- **Fixed:** ImGui window positions of this plugin should no longer reset every game session. Sorry about that.
 
 ## [32.1.0] (2025-02-15)
 
@@ -1929,6 +1941,7 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
 [unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev
+[33.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v32.1.1...v33.0.0
 [32.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v32.1.0...v32.1.1
 [32.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v32.0.4...v32.1.0
 [32.0.4]: https://github.com/Haselnussbomber/HaselTweaks/compare/v32.0.3...v32.0.4
