@@ -1,17 +1,16 @@
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using HaselCommon.Game;
 using HaselCommon.Services;
 using HaselTweaks.Config;
 using HaselTweaks.Enums;
 using HaselTweaks.Interfaces;
-using HaselTweaks.Structs;
 using Microsoft.Extensions.Logging;
 
 namespace HaselTweaks.Tweaks;
@@ -19,7 +18,8 @@ namespace HaselTweaks.Tweaks;
 [RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
 public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
 {
-    private const int NumClasses = 33;
+    private const int NumClasses = 33; // includes blue mage, crafters and gatherers
+    private const int NumPvPClasses = 21;
 
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
@@ -27,9 +27,6 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
     private readonly ILogger<CharacterClassSwitcher> _logger;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IAddonLifecycle _addonLifecycle;
-    private readonly IKeyState _keyState;
-    private readonly IChatGui _chatGui;
-    private readonly GamepadService _gamepadService;
 
     private Hook<AtkTooltipManager.Delegates.ShowTooltip>? _atkTooltipManagerShowTooltipHook;
     private Hook<AddonCharacterClass.Delegates.OnSetup>? _addonCharacterClassOnSetupHook;
@@ -210,13 +207,13 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
 
     private void AddonCharacterClassReceiveEventDetour(AddonCharacterClass* addon, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {
-        if (HandleAddonCharacterClassEvent(addon, eventType, eventParam))
+        if (HandleAddonCharacterClassEvent(addon, eventType, eventParam, atkEventData))
             return;
 
         _addonCharacterClassReceiveEventHook!.Original(addon, eventType, eventParam, atkEvent, atkEventData);
     }
 
-    private bool HandleAddonCharacterClassEvent(AddonCharacterClass* addon, AtkEventType eventType, int eventParam)
+    private bool HandleAddonCharacterClassEvent(AddonCharacterClass* addon, AtkEventType eventType, int eventParam, AtkEventData* atkEventData)
     {
         // skip events for tabs
         if (eventParam < 2)
@@ -240,23 +237,23 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         {
             var isClick =
                 eventType == AtkEventType.MouseClick || eventType == AtkEventType.ButtonClick ||
-                (eventType == AtkEventType.InputReceived && _gamepadService.IsPressed(GamepadBinding.Accept));
-
-            if (isClick && !_keyState[VirtualKey.SHIFT])
+                (eventType == AtkEventType.InputReceived && atkEventData->InputData.InputId == 1);
+             
+            if (isClick && !UIInputData.Instance()->IsKeyDown(SeVirtualKey.SHIFT))
             {
                 SwitchClassJob(8 + (uint)eventParam - 24);
                 return true;
             }
         }
 
-        return ProcessEvents(node->AtkComponentBase.OwnerNode, imageNode, eventType);
+        return ProcessEvents(node->AtkComponentBase.OwnerNode, imageNode, eventType, atkEventData);
     }
 
     private void PvPCharacterOnSetup(AddonEvent type, AddonArgs args)
     {
         var addon = (AddonPvPCharacter*)args.Addon;
 
-        for (var i = 0; i < AddonPvPCharacter.NUM_CLASSES; i++)
+        for (var i = 0; i < NumPvPClasses; i++)
         {
             var entry = addon->ClassEntries.GetPointer(i);
             if (entry->Base == null) continue;
@@ -273,7 +270,7 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
     {
         _addonPvPCharacterUpdateClassesHook!.Original(addon, numberArrayData, stringArrayData);
 
-        for (var i = 0; i < AddonPvPCharacter.NUM_CLASSES; i++)
+        for (var i = 0; i < NumPvPClasses; i++)
         {
             var entry = addon->ClassEntries.GetPointer(i);
             if (entry->Base == null || entry->Icon == null) continue;
@@ -291,21 +288,21 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         }
     }
 
-    private void AddonPvPCharacterReceiveEventDetour(AddonPvPCharacter* addon, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, nint atkEventData)
+    private void AddonPvPCharacterReceiveEventDetour(AddonPvPCharacter* addon, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData)
     {
-        if (HandleAddonPvPCharacterEvent(addon, eventType, eventParam))
+        if (HandleAddonPvPCharacterEvent(addon, eventType, eventParam, atkEventData))
             return;
 
         _addonPvPCharacterReceiveEventHook!.Original(addon, eventType, eventParam, atkEvent, atkEventData);
     }
 
-    private bool HandleAddonPvPCharacterEvent(AddonPvPCharacter* addon, AtkEventType eventType, int eventParam)
+    private bool HandleAddonPvPCharacterEvent(AddonPvPCharacter* addon, AtkEventType eventType, int eventParam, AtkEventData* atkEventData)
     {
         if ((eventParam & 0xFFFF0000) != 0x10000)
             return false;
 
         var entryId = eventParam & 0x0000FFFF;
-        if (entryId is < 0 or > AddonPvPCharacter.NUM_CLASSES)
+        if (entryId is < 0 or > NumPvPClasses)
             return false;
 
         var entry = addon->ClassEntries.GetPointer(entryId);
@@ -317,15 +314,15 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         if (!isUnlocked)
             return false;
 
-        return ProcessEvents(entry->Base->OwnerNode, entry->Icon, eventType);
+        return ProcessEvents(entry->Base->OwnerNode, entry->Icon, eventType, atkEventData);
     }
 
     /// <returns>Boolean whether original code should be skipped (true) or not (false)</returns>
-    private bool ProcessEvents(AtkComponentNode* componentNode, AtkImageNode* imageNode, AtkEventType eventType)
+    private bool ProcessEvents(AtkComponentNode* componentNode, AtkImageNode* imageNode, AtkEventType eventType, AtkEventData* atkEventData)
     {
         var isClick =
             eventType == AtkEventType.MouseClick ||
-            (eventType == AtkEventType.InputReceived && _gamepadService.IsPressed(GamepadBinding.Accept));
+            (eventType == AtkEventType.InputReceived && atkEventData->InputData.InputId == 1);
 
         if (isClick)
         {
@@ -392,7 +389,7 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
 
         if (selectedGearset.Id == -1)
         {
-            _chatGui.PrintError(_textService.Translate("CharacterClassSwitcher.NoSuitableGearsetFound"));
+            Chat.PrintError(_textService.Translate("CharacterClassSwitcher.NoSuitableGearsetFound"));
             return;
         }
 

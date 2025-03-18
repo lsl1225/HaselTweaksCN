@@ -3,6 +3,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using HaselCommon.Services;
@@ -25,11 +26,15 @@ public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
     private readonly TextService _textService;
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly ExcelService _excelService;
+    private Utf8String* _tooltipText;
 
     public string InternalName => nameof(AchievementLinkTooltip);
     public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
-    public void OnInitialize() { }
+    public void OnInitialize()
+    {
+        _tooltipText = Utf8String.CreateEmpty();
+    }
 
     public void OnEnable()
     {
@@ -48,14 +53,20 @@ public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
 
         OnDisable();
 
+        if (_tooltipText != null)
+        {
+            _tooltipText->Dtor(true);
+            _tooltipText = null;
+        }
+
         Status = TweakStatus.Disposed;
     }
 
     private void OnChatLogPanelPostReceiveEvent(AddonEvent type, AddonArgs args)
     {
-        var unitBase = (AtkUnitBase*)args.Addon;
+        var addon = (AddonChatLogPanel*)args.Addon;
 
-        if (!unitBase->IsReady || *(byte*)(args.Addon + 0x3A1) != 0 || *(byte*)(args.Addon + 0x3DE) != 0)
+        if (!addon->IsReady || addon->LogViewer.IsSelectingText || addon->IsResizing)
             return;
 
         if (args is not AddonReceiveEventArgs receiveEventArgs)
@@ -64,16 +75,14 @@ public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
         if (receiveEventArgs.AtkEventType != (byte)AtkEventType.LinkMouseOver)
             return;
 
-        var eventData = *(AtkEventData*)receiveEventArgs.Data;
-        var linkData = eventData.LinkData;
+        var eventData = (AtkEventData*)receiveEventArgs.Data;
+        var linkData = eventData->LinkData;
         var linkType = (LinkMacroPayloadType)linkData->LinkType;
         if (linkType is not LinkMacroPayloadType.Achievement)
             return;
 
         if (!_excelService.TryGetRow<Achievement>(linkData->UIntValue1, out var achievement))
             return;
-
-        using var tooltipText = new Utf8String();
 
         ref var achievements = ref UIState.Instance()->Achievement;
         var isComplete = achievements.IsComplete((int)achievement.RowId);
@@ -132,12 +141,12 @@ public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
             }
         }
 
-        tooltipText.SetString(sb.ToArray());
+        _tooltipText->SetString(sb.ToArray());
 
         // ShowTooltip call @ AddonChatLog_OnRefresh, case 0x12
         AtkStage.Instance()->TooltipManager.ShowTooltip(
-            unitBase->Id,
-            *(AtkResNode**)(args.Addon + 0x248),
-            tooltipText.StringPtr);
+            addon->Id,
+            (AtkResNode*)addon->PanelCollisionNode,
+            _tooltipText->StringPtr.Value);
     }
 }
