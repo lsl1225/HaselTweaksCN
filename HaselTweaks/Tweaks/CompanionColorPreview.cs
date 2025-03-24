@@ -1,17 +1,15 @@
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using HaselCommon.Services;
 using HaselTweaks.Enums;
 using HaselTweaks.Interfaces;
-using Microsoft.Extensions.Logging;
+using HaselTweaks.Windows;
 
 namespace HaselTweaks.Tweaks;
 
 [RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class ExpertDeliveries : ITweak
+public unsafe partial class CompanionColorPreview : ITweak
 {
-    private readonly ILogger<ExpertDeliveries> _logger;
     private readonly AddonObserver _addonObserver;
+    private readonly WindowManager _windowManager;
 
     public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
@@ -20,11 +18,18 @@ public unsafe partial class ExpertDeliveries : ITweak
     public void OnEnable()
     {
         _addonObserver.AddonOpen += OnAddonOpen;
+        _addonObserver.AddonClose += OnAddonClose;
+
+        if (_addonObserver.IsAddonVisible("Buddy"))
+            _windowManager.CreateOrOpen<CompanionColorPreviewWindow>();
     }
 
     public void OnDisable()
     {
         _addonObserver.AddonOpen -= OnAddonOpen;
+        _addonObserver.AddonClose -= OnAddonClose;
+
+        _windowManager.Close<CompanionColorPreviewWindow>();
     }
 
     void IDisposable.Dispose()
@@ -37,21 +42,19 @@ public unsafe partial class ExpertDeliveries : ITweak
         Status = TweakStatus.Disposed;
     }
 
-    public void OnAddonOpen(string addonName)
+    private void OnAddonOpen(string addonName)
     {
-        if (addonName != "GrandCompanySupplyList")
+        if (addonName != "Buddy")
             return;
 
-        if (!TryGetAddon<AtkUnitBase>(addonName, out var addon))
+        _windowManager.CreateOrOpen<CompanionColorPreviewWindow>();
+    }
+
+    private void OnAddonClose(string addonName)
+    {
+        if (addonName != "Buddy")
             return;
 
-        // prevent item selection for controller users to reset to the first entry
-        if (AgentGrandCompanySupply.Instance()->SelectedTab == 2)
-            return;
-
-        _logger.LogDebug("Changing tab...");
-
-        var atkEvent = new AtkEvent();
-        addon->ReceiveEvent(AtkEventType.ButtonClick, 4, &atkEvent);
+        _windowManager.Close<CompanionColorPreviewWindow>();
     }
 }

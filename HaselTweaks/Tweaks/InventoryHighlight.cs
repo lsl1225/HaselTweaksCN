@@ -33,7 +33,6 @@ public unsafe partial class InventoryHighlight : IConfigurableTweak
     private uint _hoveredItemId;
     private bool _wasHighlighting;
 
-    public string InternalName => nameof(InventoryHighlight);
     public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
     public void OnInitialize() { }
@@ -472,8 +471,8 @@ public unsafe partial class InventoryHighlight : IConfigurableTweak
         return container->GetInventorySlot(item->Slot);
     }
 
-    private uint NormalizeItemId(ExcelRowId<Item> itemId)
+    private uint NormalizeItemId(uint itemId)
         => Config.IgnoreQuality
-            ? itemId.GetBaseId()
+            ? GetBaseItemId(itemId)
             : itemId;
 }

@@ -6,7 +6,6 @@ using HaselCommon.Commands;
 using HaselCommon.Extensions.Strings;
 using HaselCommon.Game;
 using HaselCommon.Services;
-using HaselCommon.Utils;
 using HaselTweaks.Config;
 using HaselTweaks.Enums;
 using HaselTweaks.Extensions;
@@ -32,7 +31,6 @@ public unsafe partial class Commands : IConfigurableTweak
     private CommandHandler? _whatBardingCommandCommandHandler;
     private CommandHandler? _glamourPlateCommandCommandHandler;
 
-    public string InternalName => nameof(Commands);
     public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
     public void OnInitialize()
@@ -81,7 +79,7 @@ public unsafe partial class Commands : IConfigurableTweak
     [CommandHandler("/itemlink", "Commands.Config.EnableItemLinkCommand.Description", DisplayOrder: 2)]
     private void OnItemLinkCommand(string command, string arguments)
     {
-        ExcelRowId<Item> id;
+        uint id;
         try
         {
             id = Convert.ToUInt32(arguments.Trim());
@@ -92,9 +90,9 @@ public unsafe partial class Commands : IConfigurableTweak
             return;
         }
 
-        var isEventItem = id.IsEventItem();
+        var isEventItem = IsEventItem(id);
         var existsAsEventItem = isEventItem && _excelService.GetSheet<EventItem>().HasRow(id);
-        var existsAsItem = !isEventItem && _excelService.GetSheet<Item>().HasRow(id.GetBaseId());
+        var existsAsItem = !isEventItem && _excelService.GetSheet<Item>().HasRow(GetBaseItemId(id));
 
         if (!existsAsEventItem && !existsAsItem)
         {

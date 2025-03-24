@@ -137,7 +137,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
                     }
                 }
 
-                _imGuiContextMenuService.Draw("##GearsetContext", builder =>
+                _imGuiContextMenuService.Draw("GearsetContext", builder =>
                 {
                     builder
                         .AddGearsetLinkGlamour(gearset)
@@ -161,15 +161,17 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
             for (var slotIndex = 0u; slotIndex < NUM_SLOTS; slotIndex++)
             {
+                using var slotId = ImRaii.PushId($"Slot_{slotIndex}");
+
                 // skip obsolete belt slot
                 if (slotIndex == 5)
                     continue;
 
                 var slot = gearset->Items.GetPointer((int)slotIndex);
-                var itemId = slot->ItemId % 1000000; // strip HQ
 
                 ImGui.TableNextColumn();
 
+                var itemId = GetBaseItemId(slot->ItemId);
                 if (itemId == 0)
                 {
                     var windowPos = ImGui.GetWindowPos();
@@ -195,7 +197,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
                 ImGuiUtils.PushCursorY(2f * ImGuiHelpers.GlobalScale);
 
-                DrawItemIcon(gearset, slotIndex, slot, item, $"GearsetItem_{gearsetIndex}_{slotIndex}");
+                DrawItemIcon(gearset, slotIndex, slot, item);
 
                 var itemLevelText = $"{item.LevelItem.RowId}";
                 ImGuiUtils.PushCursorX(IconSize.X * ImGuiHelpers.GlobalScale / 2f - ImGui.CalcTextSize(itemLevelText).X / 2f);
@@ -226,14 +228,8 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         return list;
     }
 
-    public void DrawItemIcon(GearsetEntry* gearset, uint slotIndex, GearsetItem* slot, Item item, string key)
+    public void DrawItemIcon(GearsetEntry* gearset, uint slotIndex, GearsetItem* slot, Item item)
     {
-        var popupKey = $"##ItemContextMenu_{key}_{item.RowId}_Tooltip";
-
-        //var isEventItem = slot.ItemID > 2000000;
-        //var isCollectable = slot.ItemID is > 500000 and < 1000000;
-        var isHq = slot->ItemId is > 1000000 and < 1500000;
-
         var startPos = ImGui.GetCursorPos();
 
         // icon background
@@ -242,14 +238,14 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         // icon
         ImGui.SetCursorPos(startPos + IconInset * ImGuiHelpers.GlobalScale);
-        _textureService.DrawIcon(new GameIconLookup(item.Icon, isHq), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
+        _textureService.DrawIcon(new GameIconLookup(item.Icon, IsHighQuality(slot->ItemId)), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
 
         // icon overlay
         ImGui.SetCursorPos(startPos);
         _textureService.DrawPart("Character", 7, 0, IconSize * ImGuiHelpers.GlobalScale);
 
         // icon hover effect
-        if (ImGui.IsItemHovered() || ImGui.IsPopupOpen(popupKey))
+        if (ImGui.IsItemHovered() || ImGui.IsPopupOpen("ItemTooltip"))
         {
             ImGui.SetCursorPos(startPos);
             _textureService.DrawPart("Character", 7, 5, IconSize * ImGuiHelpers.GlobalScale);
@@ -257,14 +253,14 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         ImGui.SetCursorPos(startPos + new Vector2(0, (IconSize.Y - 3) * ImGuiHelpers.GlobalScale));
 
-        _imGuiContextMenuService.Draw(popupKey, builder =>
+        _imGuiContextMenuService.Draw("ItemTooltip", builder =>
         {
             builder
-                .AddTryOn(item, slot->GlamourId, slot->Stain0Id, slot->Stain1Id)
+                .AddTryOn(item.RowId, slot->GlamourId, slot->Stain0Id, slot->Stain1Id)
                 .AddItemFinder(item.RowId)
                 .AddCopyItemName(item.RowId)
                 .AddOpenOnGarlandTools("item", item.RowId)
-                .AddItemSearch(item);
+                .AddItemSearch(item.RowId);
         });
 
         if (!ImGui.IsItemHovered())
@@ -272,7 +268,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         using var _ = ImRaii.Tooltip();
 
-        ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(item), _textService.GetItemName(item.RowId));
+        ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(item.RowId), _textService.GetItemName(item.RowId));
 
         var holdingShift = ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift);
         if (holdingShift)
@@ -294,7 +290,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         {
             ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelGlamour"));
             ImGuiUtils.SameLineSpace();
-            ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(glamourItem), _textService.GetItemName(slot->GlamourId));
+            ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(glamourItem.RowId), _textService.GetItemName(slot->GlamourId));
 
             if (holdingShift)
             {
