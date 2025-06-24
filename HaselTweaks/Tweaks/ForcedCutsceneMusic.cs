@@ -1,13 +1,5 @@
-using System.Collections.Generic;
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Base;
-using HaselCommon.Extensions.Dalamud;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace HaselTweaks.Tweaks;
 
@@ -35,7 +27,7 @@ public unsafe partial class ForcedCutsceneMusic : IConfigurableTweak
 
     private readonly Dictionary<string, bool> _wasMuted = [];
 
-    private delegate void CutSceneControllerDtorDelegate(CutSceneController* self, byte freeFlags);
+    private delegate CutSceneController* CutSceneControllerDtorDelegate(CutSceneController* self, byte freeFlags);
 
     public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
@@ -99,26 +91,25 @@ public unsafe partial class ForcedCutsceneMusic : IConfigurableTweak
         return ret;
     }
 
-    private void CutSceneControllerDtorDetour(CutSceneController* self, byte freeFlags)
+    private CutSceneController* CutSceneControllerDtorDetour(CutSceneController* self, byte freeFlags)
     {
-        _logger.LogInformation("Cutscene {id} ended", self->CutsceneId);
+        var cutsceneId = self->CutsceneId;
 
-        _cutSceneControllerDtorHook!.Original(self, freeFlags);
+        _logger.LogInformation("Cutscene {id} ended", cutsceneId);
 
-        if (!Config.Restore)
-            return;
-
-        if (self->CutsceneId == 0) // ignore title screen cutscene
-            return;
-
-        foreach (var optionName in ConfigOptions)
+        if (Config.Restore && cutsceneId != 0) // ignore title screen cutscene
         {
-            if (ShouldHandle(optionName) && _wasMuted.TryGetValue(optionName, out var value) && value)
+            foreach (var optionName in ConfigOptions)
             {
-                _logger.LogInformation("Restoring {optionName} to {value}", optionName, value);
-                _gameConfig.System.Set(optionName, value);
+                if (ShouldHandle(optionName) && _wasMuted.TryGetValue(optionName, out var value) && value)
+                {
+                    _logger.LogInformation("Restoring {optionName} to {value}", optionName, value);
+                    _gameConfig.System.Set(optionName, value);
+                }
             }
         }
+
+        return _cutSceneControllerDtorHook!.Original(self, freeFlags);
     }
 
     private bool ShouldHandle(string optionName)

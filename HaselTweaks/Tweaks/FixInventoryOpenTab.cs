@@ -1,12 +1,5 @@
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Microsoft.Extensions.Logging;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace HaselTweaks.Tweaks;
 
@@ -82,6 +75,6 @@ public unsafe partial class FixInventoryOpenTab : ITweak
             case "Inventory": ((AddonInventory*)addon)->SetTab(0); break;
             case "InventoryLarge": ((AddonInventoryLarge*)addon)->SetTab(0); break;
             case "InventoryExpansion": ((AddonInventoryExpansion*)addon)->SetTab(0, false); break;
-        };
+        }
     }
 }

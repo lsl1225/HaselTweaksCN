@@ -1,26 +1,14 @@
-using System.Numerics;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselCommon.Extensions.Sheets;
-using HaselCommon.Game;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Config;
 using HaselTweaks.Enums.PortraitHelper;
-using HaselTweaks.Interfaces;
-using HaselTweaks.Tweaks;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Windows.PortraitHelperWindows;
 
-public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
+[AutoConstruct]
+public abstract unsafe partial class Overlay : SimpleWindow, IDisposable, IOverlay
 {
-    protected readonly PluginConfig PluginConfig;
-    protected readonly ExcelService ExcelService;
+    private readonly PluginConfig _pluginConfig;
+    private readonly ExcelService _excelService;
 
     private readonly ImRaii.Style _windowPadding = new();
     private readonly ImRaii.Color _windowBg = new();
@@ -28,26 +16,24 @@ public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
 
     protected uint DefaultImGuiTextColor { get; set; }
 
-    protected PortraitHelperConfiguration Config => PluginConfig.Tweaks.PortraitHelper;
+    protected PortraitHelperConfiguration Config => _pluginConfig.Tweaks.PortraitHelper;
 
     public bool IsWindow { get; set; }
     public virtual OverlayType Type => OverlayType.Window;
 
-    public Overlay(
-        WindowManager windowManager,
-        TextService textService,
-        LanguageProvider languageProvider,
-        PluginConfig pluginConfig,
-        ExcelService excelService)
-        : base(windowManager, textService, languageProvider)
+    [AutoPostConstruct]
+    private void Initialize()
     {
-        PluginConfig = pluginConfig;
-        ExcelService = excelService;
-
         DisableWindowSounds = true;
         RespectCloseHotkey = false;
 
         UpdateWindow();
+    }
+
+    public override void Dispose()
+    {
+        OnClose();
+        base.Dispose();
     }
 
     public override void OnClose()
@@ -66,10 +52,10 @@ public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
         var agnet = AgentBannerEditor.Instance();
         var addon = GetAddon<AddonBannerEditor>(AgentId.BannerEditor);
 
-        if (agnet == null || addon == null || agnet->EditorState == null || !addon->AtkUnitBase.IsReady)
+        if (agnet == null || addon == null || agnet->EditorState == null || !addon->IsReady)
             return false;
 
-        var isContextMenuOpen = addon->AtkUnitBase.NumOpenPopups != 0;
+        var isContextMenuOpen = addon->NumOpenPopups != 0;
         var isCloseDialogOpen = agnet->EditorState->CloseDialogAddonId != 0;
 
         return IsOpen && !isContextMenuOpen && !isCloseDialogOpen;
@@ -102,9 +88,9 @@ public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
                 _windowPadding.Push(ImGuiStyleVar.WindowPadding, Vector2.Zero);
             }
 
-            if (Misc.IsLightTheme && ExcelService.TryGetRow<UIColor>(2, out var uiColor))
+            if (Misc.IsLightTheme && _excelService.TryGetRow<UIColor>(2, out var uiColor))
             {
-                _windowText.Push(ImGuiCol.Text, (uint)uiColor.GetForegroundColor());
+                _windowText.Push(ImGuiCol.Text, Color.FromABGR(uiColor.Dark).ToUInt());
             }
 
             _windowBg.Push(ImGuiCol.WindowBg, 0);
@@ -137,36 +123,36 @@ public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
             Flags |= ImGuiWindowFlags.NoMove;
             SizeCondition = ImGuiCond.Always;
 
+            var scale = addon->Scale;
+
             if (Type == OverlayType.Window)
             {
-                var windowNode = (AtkResNode*)((AtkUnitBase*)addon)->WindowNode;
-                var scale = GetNodeScale(windowNode);
+                var windowNode = addon->WindowNode;
 
                 Position = new Vector2(
-                    addon->AtkUnitBase.X + (windowNode->X + 8) * scale.X,
-                    addon->AtkUnitBase.Y + (windowNode->Y + 40) * scale.Y
+                    addon->X + (windowNode->X + 8) * scale,
+                    addon->Y + (windowNode->Y + 40) * scale
                 );
 
                 Size = new Vector2(
-                    (windowNode->GetWidth() - 16) * scale.X,
-                    (windowNode->GetHeight() - 56) * scale.Y
+                    (windowNode->GetWidth() - 16) * scale,
+                    (windowNode->GetHeight() - 56) * scale
                 );
             }
             else if (Type == OverlayType.LeftPane)
             {
                 Flags |= ImGuiWindowFlags.AlwaysAutoResize;
 
-                var leftPane = GetNode<AtkResNode>(&addon->AtkUnitBase, 20);
-                var scale = GetNodeScale(leftPane);
+                var leftPane = addon->GetNodeById(20);
 
                 Position = new Vector2(
-                    addon->AtkUnitBase.X + leftPane->X * scale.X,
-                    addon->AtkUnitBase.Y + leftPane->Y * scale.Y
+                    addon->X + leftPane->X * scale,
+                    addon->Y + leftPane->Y * scale
                 );
 
                 Size = new Vector2(
-                    leftPane->GetWidth() * scale.X,
-                    leftPane->GetHeight() * scale.Y
+                    leftPane->GetWidth() * scale,
+                    leftPane->GetHeight() * scale
                 );
 
                 SizeConstraints = null;
@@ -197,31 +183,17 @@ public abstract unsafe class Overlay : SimpleWindow, IDisposable, IOverlay
         if (addon == null)
             return;
 
-        var leftPane = GetNode<AtkResNode>(&addon->AtkUnitBase, 20);
-        leftPane->ToggleVisibility(visible);
+        addon->GetNodeById(20)->ToggleVisibility(visible); // LeftPane
 
         if (Type != OverlayType.LeftPane)
         {
-            var rightPane = GetNode<AtkResNode>(&addon->AtkUnitBase, 107);
-            rightPane->ToggleVisibility(visible);
-
-            var verticalSeparatorNode = GetNode<AtkResNode>(&addon->AtkUnitBase, 135);
-            verticalSeparatorNode->ToggleVisibility(visible);
-
-            var controlsHint = GetNode<AtkResNode>(&addon->AtkUnitBase, 2);
-            controlsHint->ToggleVisibility(visible);
-
-            var copyEquimentButton = GetNode<AtkResNode>(&addon->AtkUnitBase, 131);
-            copyEquimentButton->ToggleVisibility(visible);
-
-            var saveButton = GetNode<AtkResNode>(&addon->AtkUnitBase, 133);
-            saveButton->ToggleVisibility(visible);
-
-            var closeButton = GetNode<AtkResNode>(&addon->AtkUnitBase, 134);
-            closeButton->ToggleVisibility(visible);
-
-            var lowerHorizontalLine = GetNode<AtkResNode>(&addon->AtkUnitBase, 136);
-            lowerHorizontalLine->ToggleVisibility(visible);
+            addon->GetNodeById(107)->ToggleVisibility(visible); // RightPane
+            addon->GetNodeById(135)->ToggleVisibility(visible); // VerticalSeparatorNode
+            addon->GetNodeById(2)->ToggleVisibility(visible); // ControlsHint
+            addon->GetNodeById(131)->ToggleVisibility(visible); // CopyEquimentButton
+            addon->GetNodeById(133)->ToggleVisibility(visible); // SaveButton
+            addon->GetNodeById(134)->ToggleVisibility(visible); // CloseButton
+            addon->GetNodeById(136)->ToggleVisibility(visible); // LowerHorizontalLine
         }
     }
 }

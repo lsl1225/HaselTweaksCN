@@ -1,27 +1,11 @@
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
-using Lumina.Extensions;
-using Lumina.Text;
-using Lumina.Text.Payloads;
-using Lumina.Text.ReadOnly;
-using Microsoft.Extensions.Logging;
-using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace HaselTweaks.Tweaks;
 
@@ -41,10 +25,8 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
     private readonly MapService _mapService;
     private readonly ItemService _itemService;
 
-    private delegate void AddonRecipeMaterialList_SetupRowDelegates(AddonRecipeMaterialList* thisPtr, nint a2, nint a3);
-
     private Hook<AgentRecipeMaterialList.Delegates.ReceiveEvent>? _agentRecipeMaterialListReceiveEventHook;
-    private Hook<AddonRecipeMaterialList_SetupRowDelegates>? _addonRecipeMaterialListSetupRowHook;
+    private Hook<AtkComponentListItemPopulator.PopulateDelegate>? _addonRecipeMaterialListSetupRowHook;
     private Hook<AgentRecipeItemContext.Delegates.AddItemContextMenuEntries>? _addItemContextMenuEntriesHook;
 
     private bool _canRefreshMaterialList;
@@ -65,9 +47,9 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
             AgentRecipeMaterialList.StaticVirtualTablePointer->ReceiveEvent,
             AgentRecipeMaterialListReceiveEventDetour);
 
-        _addonRecipeMaterialListSetupRowHook = _gameInteropProvider.HookFromSignature<AddonRecipeMaterialList_SetupRowDelegates>(
+        _addonRecipeMaterialListSetupRowHook = _gameInteropProvider.HookFromSignature<AtkComponentListItemPopulator.PopulateDelegate>(
             "48 89 5C 24 ?? 48 89 54 24 ?? 48 89 4C 24 ?? 55 56 57 41 54 41 55 41 56 41 57 48 83 EC 50 49 8B 08",
-            AddonRecipeMaterialListSetupRowDetour);
+            AddonRecipeMaterialListPopulateRowDetour);
 
         _addItemContextMenuEntriesHook = _gameInteropProvider.HookFromAddress<AgentRecipeItemContext.Delegates.AddItemContextMenuEntries>(
             AgentRecipeItemContext.MemberFunctionPointers.AddItemContextMenuEntries,
@@ -83,6 +65,9 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         _addonObserver.AddonOpen += OnAddonOpen;
         _gameInventory.InventoryChangedRaw += OnInventoryUpdate;
         _clientState.Login += OnLogin;
+
+        if (_clientState.IsLoggedIn)
+            OnLogin();
 
         _agentRecipeMaterialListReceiveEventHook?.Enable();
         _addonRecipeMaterialListSetupRowHook?.Enable();
@@ -186,13 +171,11 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
                 if (!Config.ClickToOpenMap)
                     return;
 
-                var data = receiveEventArgs.Data;
-                if (data == 0 || *(byte*)(data + 0x18) == 1) // ignore right click
+                var data = (AtkEventData.AtkListItemData*)receiveEventArgs.Data;
+                if (data == null || data->MouseButtonId == 1) // ignore right click
                     return;
 
-                var rowData = **(nint**)(data + 0x08);
-                var itemId = *(uint*)(rowData + 0x04);
-
+                var itemId = data->ListItem->UIntValues[1];
                 if (Config.DisableClickToOpenMapForCrystals && (!_excelService.TryGetRow<Item>(itemId, out var item) || item.ItemUICategory.RowId == 59))
                     return;
 
@@ -238,7 +221,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
 
         _logger.LogInformation("Refreshing RecipeMaterialList");
         var atkEvent = new AtkEvent();
-        recipeMaterialList->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, 1, &atkEvent);
+        recipeMaterialList->ReceiveEvent(AtkEventType.ButtonClick, 1, &atkEvent);
     }
 
     private void RefreshRecipeTree()
@@ -278,23 +261,27 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         {
             Config.RestoreMaterialListRecipeId = recipeId;
             Config.RestoreMaterialListAmount = amount;
+            _logger.LogDebug("Saving {amount}x {id}", amount, recipeId);
             _pluginConfig.Save();
         }
     }
 
-    private void AddonRecipeMaterialListSetupRowDetour(AddonRecipeMaterialList* addon, nint a2, nint a3)
+    private void AddonRecipeMaterialListPopulateRowDetour(AtkUnitBase* thisPtr, AtkComponentListItemPopulator.ListItemInfo* listItemInfo, AtkResNode** nodeList)
     {
-        _addonRecipeMaterialListSetupRowHook!.Original(addon, a2, a3);
-        RecipeMaterialList_HandleSetupRow(a2, a3);
-    }
+        _addonRecipeMaterialListSetupRowHook!.Original(thisPtr, listItemInfo, nodeList);
 
-    private void RecipeMaterialList_HandleSetupRow(nint a2, nint a3)
-    {
         if (!Config.EnableZoneNames)
             return;
 
-        var data = **(nint**)(a2 + 0x08);
-        var itemId = *(uint*)(data + 0x04);
+        var itemId = listItemInfo->ListItem->UIntValues[1];
+
+        var nameNode = nodeList[1]->GetAsAtkTextNode();
+        if (nameNode == null)
+            return;
+
+        var textPtr = nameNode->GetText();
+        if (textPtr.Value == null)
+            return;
 
         // TODO: only for missing items?
 
@@ -311,23 +298,12 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
 
         var (totalPoints, point, cost, isSameZone, placeNameSeString) = tuple.Value;
 
-        var nameNode = *(AtkTextNode**)(a3 + 0x08);
-        if (nameNode == null)
-            return;
-
-        var textPtr = nameNode->GetText();
-        if (textPtr == null)
-            return;
-
-        // when you don't know how to add text nodes... Sadge
-
-        nameNode->AtkResNode.Y = 14;
-        nameNode->AtkResNode.DrawFlags |= 0x1;
-
+        nameNode->Y = 14;
         nameNode->TextFlags = 192; // allow multiline text (not sure on the actual flags it sets though)
         nameNode->LineSpacing = 17;
+        nameNode->DrawFlags |= 0x1;
 
-        var itemName = new ReadOnlySeStringSpan(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(textPtr)).ExtractText().Replace("\r\n", "");
+        var itemName = textPtr.ExtractText().Replace("\r\n", "");
         if (itemName.Length > 23)
             itemName = itemName[..20] + "...";
 
@@ -335,7 +311,8 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         if (placeName.Length > 23)
             placeName = placeName[..20] + "...";
 
-        var str = new SeStringBuilder()
+        using var rssb = new RentedSeStringBuilder();
+        nameNode->SetText(rssb.Builder
             .Append(itemName)
             .BeginMacro(MacroCode.NewLine).EndMacro()
             .PushColorType((ushort)(isSameZone ? 570 : 4))
@@ -343,9 +320,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
             .Append(placeName)
             .PopEdgeColorType()
             .PopColorType()
-            .GetViewAsSpan();
-
-        nameNode->SetText(str);
+            .GetViewAsSpan());
     }
 
     private void AddItemContextMenuEntriesDetour(AgentRecipeItemContext* agent, uint itemId, byte flags, byte* itemName, byte a5, byte a6)
@@ -371,7 +346,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         if (agentRecipeMaterialList->Recipe == null || agentRecipeMaterialList->Recipe->ResultItemId != itemId)
             return;
 
-        var localPlayer = (Character*)(_clientState.LocalPlayer?.Address ?? 0);
+        var localPlayer = Control.GetLocalPlayer();
         if (localPlayer == null || localPlayer->Mode == CharacterModes.Crafting)
             return;
 
@@ -381,7 +356,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
     private (int, GatheringPoint, uint, bool, ReadOnlySeString)? GetPointForItem(uint itemId)
     {
         var gatheringItems = _itemService.GetGatheringItems(itemId);
-        if (!gatheringItems.Any())
+        if (gatheringItems.Length == 0)
             return null;
 
         // TODO: rethink this

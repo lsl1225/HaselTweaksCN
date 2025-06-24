@@ -1,21 +1,8 @@
-using System.Collections.Generic;
-using System.Numerics;
 using Dalamud.Interface.Textures;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using HaselCommon.Extensions.Sheets;
-using HaselCommon.Extensions.Strings;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Tweaks;
-using HaselTweaks.Utils;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 using GearsetEntry = FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.GearsetEntry;
 using GearsetFlag = FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.GearsetFlag;
 using GearsetItem = FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.GearsetItem;
@@ -31,12 +18,14 @@ public unsafe partial class GearSetGridWindow : LockableWindow
     private readonly IClientState _clientState;
     private readonly TextureService _textureService;
     private readonly ExcelService _excelService;
+    private readonly LanguageProvider _languageProvider;
     private readonly TextService _textService;
     private readonly ImGuiContextMenuService _imGuiContextMenuService;
     private readonly ItemService _itemService;
+    private readonly PluginConfig _pluginConfig;
     private bool _resetScrollPosition;
 
-    public GearSetGridConfiguration Config => PluginConfig.Tweaks.GearSetGrid;
+    public GearSetGridConfiguration Config => _pluginConfig.Tweaks.GearSetGrid;
 
     [AutoPostConstruct]
     private void Initialize()
@@ -171,7 +160,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
                 ImGui.TableNextColumn();
 
-                var itemId = GetBaseItemId(slot->ItemId);
+                var itemId = ItemUtil.GetBaseId(slot->ItemId).ItemId;
                 if (itemId == 0)
                 {
                     var windowPos = ImGui.GetWindowPos();
@@ -238,7 +227,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         // icon
         ImGui.SetCursorPos(startPos + IconInset * ImGuiHelpers.GlobalScale);
-        _textureService.DrawIcon(new GameIconLookup(item.Icon, IsHighQuality(slot->ItemId)), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
+        _textureService.DrawIcon(new GameIconLookup(item.Icon, ItemUtil.IsHighQuality(slot->ItemId)), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
 
         // icon overlay
         ImGui.SetCursorPos(startPos);
@@ -268,7 +257,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         using var _ = ImRaii.Tooltip();
 
-        ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(item.RowId), _textService.GetItemName(item.RowId));
+        ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(item.RowId), _textService.GetItemName(item.RowId).ExtractText().StripSoftHyphen());
 
         var holdingShift = ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift);
         if (holdingShift)
@@ -290,7 +279,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         {
             ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelGlamour"));
             ImGuiUtils.SameLineSpace();
-            ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(glamourItem.RowId), _textService.GetItemName(slot->GlamourId));
+            ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(glamourItem.RowId), _textService.GetItemName(slot->GlamourId).ExtractText().StripSoftHyphen());
 
             if (holdingShift)
             {
@@ -303,10 +292,10 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         {
             ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye0"));
             ImGuiUtils.SameLineSpace();
-            using (ImRaii.PushColor(ImGuiCol.Text, (uint)stain0.GetColor()))
+            using (ImRaii.PushColor(ImGuiCol.Text, stain0.GetColor().ToUInt()))
                 ImGui.Bullet();
             ImGui.SameLine(0, 0);
-            ImGui.TextUnformatted(stain0.Name.ExtractText().FirstCharToUpper());
+            ImGui.TextUnformatted(stain0.Name.ExtractText().FirstCharToUpper(_languageProvider.CultureInfo));
 
             if (holdingShift)
             {
@@ -319,10 +308,10 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         {
             ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye1"));
             ImGuiUtils.SameLineSpace();
-            using (ImRaii.PushColor(ImGuiCol.Text, (uint)stain1.GetColor()))
+            using (ImRaii.PushColor(ImGuiCol.Text, stain1.GetColor().ToUInt()))
                 ImGui.Bullet();
             ImGui.SameLine(0, 0);
-            ImGui.TextUnformatted(stain1.Name.ExtractText().FirstCharToUpper());
+            ImGui.TextUnformatted(stain1.Name.ExtractText().FirstCharToUpper(_languageProvider.CultureInfo));
 
             if (holdingShift)
             {

@@ -1,42 +1,27 @@
-using System.Numerics;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.Havok.Animation.Animation;
-using HaselCommon.Extensions.Sheets;
-using HaselCommon.Game;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Config;
 using HaselTweaks.Enums.PortraitHelper;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace HaselTweaks.Windows.PortraitHelperWindows.Overlays;
 
-#pragma warning disable CS9107
-
-[RegisterScoped]
-public unsafe class AdvancedEditOverlay(
-    TextService textService,
-    LanguageProvider languageProvider,
-    WindowManager windowManager,
-    ExcelService excelService,
-    PluginConfig pluginConfig)
-    : Overlay(windowManager, textService, languageProvider, pluginConfig, excelService)
+[RegisterScoped, AutoConstruct]
+public unsafe partial class AdvancedEditOverlay : Overlay
 {
-    public override OverlayType Type => OverlayType.LeftPane;
+    private const float ThirtyFps = 30f;
 
-    private const float THIRTY_FPS = 30f;
+    private readonly TextService _textService;
+    private readonly ExcelService _excelService;
 
     private float _timestamp;
     private float _duration;
     private int _frameCount;
     private bool _isDragging;
+
+    public override OverlayType Type => OverlayType.LeftPane;
 
     private AgentBannerEditorState* EditorState => AgentBannerEditor.Instance()->EditorState;
     private CharaViewPortrait* CharaView => EditorState != null ? EditorState->CharaView : null;
@@ -84,7 +69,7 @@ public unsafe class AdvancedEditOverlay(
             return;
 
         _duration = animation->Duration - 0.5f;
-        _frameCount = (int)Math.Round(THIRTY_FPS * _duration);
+        _frameCount = (int)Math.Round(ThirtyFps * _duration);
     }
 
     public override void Draw()
@@ -99,10 +84,10 @@ public unsafe class AdvancedEditOverlay(
         if (!IsWindow)
         {
             ImGuiUtils.DrawSection(
-                textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Title.Inner"),
+                _textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Title.Inner"),
                 pushDown: false,
                 respectUiTheme: true,
-                ExcelService.CreateRef<UIColor>(2));
+                _excelService.CreateRef<UIColor>(2));
         }
 
         using (var table = ImRaii.Table("##Table", 2))
@@ -121,10 +106,10 @@ public unsafe class AdvancedEditOverlay(
             }
         }
 
-        using (ImRaii.PushColor(ImGuiCol.Text, (uint)(Misc.IsLightTheme && !IsWindow && ExcelService.TryGetRow<UIColor>(3, out var noteColor) ? noteColor.GetForegroundColor() : Color.Grey)))
+        using ((Misc.IsLightTheme && !IsWindow && _excelService.TryGetRow<UIColor>(3, out var noteColor) ? Color.FromABGR(noteColor.Dark) : Color.Grey).Push(ImGuiCol.Text))
         {
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Note.Label"));
-            ImGuiHelpers.SafeTextWrapped(textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Note.Text"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Note.Label"));
+            ImGuiHelpers.SafeTextWrapped(_textService.Translate("PortraitHelperWindows.AdvancedEditOverlay.Note.Text"));
         }
     }
 
@@ -139,11 +124,11 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraYaw.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraYaw.Label"));
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
-                ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraYaw.Tooltip"));
+                ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraYaw.Tooltip"));
                 ImGui.EndTooltip();
             }
 
@@ -166,11 +151,11 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraPitch.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraPitch.Label"));
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
-                ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraPitch.Tooltip"));
+                ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraPitch.Tooltip"));
                 ImGui.EndTooltip();
             }
 
@@ -193,7 +178,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraDistance.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraDistance.Label"));
 
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -219,7 +204,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.CameraTarget.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.CameraTarget.Label"));
 
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -249,7 +234,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.ZoomRotation.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.ZoomRotation.Label"));
 
             ImGui.TableNextColumn();
 
@@ -288,7 +273,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.EyeDirection.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.EyeDirection.Label"));
 
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -315,7 +300,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.HeadDirection.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.HeadDirection.Label"));
 
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -342,7 +327,7 @@ public unsafe class AdvancedEditOverlay(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(textService.Translate("PortraitHelperWindows.Setting.AnimationTimestamp.Label"));
+            ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.Setting.AnimationTimestamp.Label"));
 
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);

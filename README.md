@@ -102,10 +102,6 @@ Lets you customize message formats for various chat channels.
 
 Lets you customize the chat timestamp format using C#'s [`DateTime.ToString()`](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings).
 
-### Disable Mount Tilt
-
-Disables leaning into turns during riding or flying.
-
 ### DTR
 
 Shows Instance number (only if the current zone is instanced), FPS and Busy status (only if busy) in the DTR bar.
@@ -121,13 +117,15 @@ Configuration options:
 Depending on the settings, the experience bar can be transformed into one of the following bars:
 
 - The PvP Series Bar displays your series rank and experience. If there is a \* symbol next to your rank, it means a rank-up reward is claimable.
-- The Sanctuary Bar displays your sanctuary level and island experience.
 - The Companion Bar displays your chocobos rank and experience.
+- The Sanctuary Bar displays your sanctuary level and island experience.
+- The Cosmic Research Bar displays the dataset for your current job and its analysis progress.
 
 Configuration options:
 
 - Always show PvP Series Bar in PvP Areas
 - Always show Sanctuary Bar on the Island
+- Always show Cosmic Research Bar in Cosmic Exploration
 - Hide Job on Sanctuary Bar
 - Max Level Override
   - Will switch to the selected bar if your current job is on max level and none of the settings above apply.
@@ -135,6 +133,16 @@ Configuration options:
 
 > **Note**
 > In order for this tweak to work properly, please make sure "Show Experience Percentage" is disabled in Simple Tweaks.
+
+### Enhanced Hunting Log
+
+Configuration options:
+
+- Remember last selected class  
+  The game's default behaviour is to reset the window to the first tab.
+- Automatically select the current class  
+  Only works if a matching class was found. Overrides the option \"Remember last selected class\" in that case.
+- Automatically set the filter to "Show Incomplete"
 
 ### Enhanced Isleworks Agenda
 
@@ -303,6 +311,10 @@ Configuration options:
   - You are in a place where glamour plates are allowed to be applied.
   - The glamour plate covers the slot(s) that caused the mismatch.
   - The mismatch was not caused by mainhand/headgear visibility or visor state.
+
+### Restore Golden City
+
+When the quest “Dawntrail” is completed, this tweak will restore the Golden City to its former glory - without New Game+.
 
 ### Reveal Duty Requirements
 

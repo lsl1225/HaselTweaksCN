@@ -1,19 +1,11 @@
-using System.Linq;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Text;
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.Game.WKS;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
+using Lumina.Excel;
 
 namespace HaselTweaks.Tweaks;
 
@@ -27,6 +19,7 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly ExcelService _excelService;
+    private readonly SeStringEvaluator _seStringEvaluator;
 
     private Hook<AgentHUD.Delegates.UpdateExp>? _updateExpHook;
     private byte _colorMultiplyRed = 100;
@@ -88,40 +81,34 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     {
         _updateExpHook!.Original(thisPtr, expNumberArray, expStringArray, characterStringArray);
 
-        if (!_clientState.IsLoggedIn || _clientState.LocalPlayer == null || !_clientState.LocalPlayer.ClassJob.IsValid)
+        if (PlayerState.Instance()->IsLoaded == 0 || !_excelService.TryGetRow<ClassJob>(PlayerState.Instance()->CurrentClassJobId, out var classJob))
             return;
 
         SetColor(); // reset unless overwritten
 
-        if (Config.ForceCompanionBar && UIState.Instance()->Buddy.CompanionInfo.Companion != null && UIState.Instance()->Buddy.CompanionInfo.Companion->EntityId != 0xE0000000)
-        {
-            OverwriteWithCompanionBar();
+        if (Config.ForceCompanionBar && OverwriteWithCompanionBar(classJob))
             return;
-        }
 
-        if (Config.ForcePvPSeriesBar && _clientState.IsPvP)
-        {
-            OverwriteWithPvPBar();
+        if (Config.ForcePvPSeriesBar && _excelService.TryGetRow<TerritoryType>(GameMain.Instance()->CurrentTerritoryTypeId, out var territoryType) && territoryType.IsPvpZone && OverwriteWithPvPBar(classJob))
             return;
-        }
 
-        if (Config.ForceSanctuaryBar && GameMain.Instance()->CurrentTerritoryIntendedUseId == 49)
-        {
-            OverwriteWithSanctuaryBar();
+        if (Config.ForceSanctuaryBar && OverwriteWithSanctuaryBar(classJob))
             return;
-        }
 
-        if (!((AgentHUD*)thisPtr)->ExpIsMaxLevel)
+        if (Config.ForceCosmicResearchBar && OverwriteWithCosmicResearchBar(classJob))
+            return;
+
+        if (!thisPtr->ExpFlags.HasFlag(AgentHudExpFlag.MaxLevel))
             return;
 
         switch (Config.MaxLevelOverride)
         {
             case MaxLevelOverrideType.PvPSeriesBar:
-                OverwriteWithPvPBar();
+                OverwriteWithPvPBar(classJob);
                 return;
 
             case MaxLevelOverrideType.CompanionBar:
-                OverwriteWithCompanionBar();
+                OverwriteWithCompanionBar(classJob);
                 return;
         }
     }
@@ -130,75 +117,81 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     {
         var addon = (AtkUnitBase*)args.Addon;
 
-        var gaugeBarNode = GetNode<AtkComponentNode>(addon, 6);
+        var gaugeBarNode = addon->GetComponentByNodeId(6);
         if (gaugeBarNode == null)
             return;
 
-        var nineGridNode = GetNode<AtkNineGridNode>(gaugeBarNode->Component, 4);
+        var nineGridNode = gaugeBarNode->GetNineGridNodeById(4);
         if (nineGridNode == null)
             return;
 
-        if (nineGridNode->AtkResNode.MultiplyRed != _colorMultiplyRed)
-            nineGridNode->AtkResNode.MultiplyRed = _colorMultiplyRed;
+        if (nineGridNode->MultiplyRed != _colorMultiplyRed)
+            nineGridNode->MultiplyRed = _colorMultiplyRed;
 
-        if (nineGridNode->AtkResNode.MultiplyGreen != _colorMultiplyGreen)
-            nineGridNode->AtkResNode.MultiplyGreen = _colorMultiplyGreen;
+        if (nineGridNode->MultiplyGreen != _colorMultiplyGreen)
+            nineGridNode->MultiplyGreen = _colorMultiplyGreen;
 
-        if (nineGridNode->AtkResNode.MultiplyBlue != _colorMultiplyBlue)
-            nineGridNode->AtkResNode.MultiplyBlue = _colorMultiplyBlue;
+        if (nineGridNode->MultiplyBlue != _colorMultiplyBlue)
+            nineGridNode->MultiplyBlue = _colorMultiplyBlue;
     }
 
-    private void OverwriteWithCompanionBar()
+    private bool OverwriteWithCompanionBar(ClassJob classJob)
     {
         var buddy = UIState.Instance()->Buddy.CompanionInfo;
 
-        if (!_excelService.TryGetRow<BuddyRank>(buddy.Rank, out var buddyRank))
-            return;
+        if (buddy.Companion == null || buddy.Companion->EntityId == 0xE0000000)
+            return false;
 
-        var job = _clientState.LocalPlayer!.ClassJob.Value.Abbreviation;
-        var levelLabel = (_textService.GetAddonText(4968) ?? "Rank").Trim().Replace(":", "");
+        if (!_excelService.TryGetRow<BuddyRank>(buddy.Rank, out var buddyRank))
+            return false;
+
+        var levelLabel = _textService.GetAddonText(4968).Trim().Replace(":", ""); // "Rank:"
         var rank = buddy.Rank > 20 ? 20 : buddy.Rank;
         var level = rank.ToString().Aggregate("", (str, chr) => str + (char)(SeIconChar.Number0 + byte.Parse(chr.ToString())));
         var requiredExperience = buddyRank.ExpRequired;
         var xpText = requiredExperience == 0 ? "" : $"   {buddy.CurrentXP}/{requiredExperience}";
 
-        SetText($"{job}  {levelLabel} {level}{xpText}");
+        SetText($"{classJob.Abbreviation}  {levelLabel} {level}{xpText}");
         SetExperience((int)buddy.CurrentXP, (int)requiredExperience);
+
+        return true;
     }
 
-    private void OverwriteWithPvPBar()
+    private bool OverwriteWithPvPBar(ClassJob classJob)
     {
         var pvpProfile = PvPProfile.Instance();
-
         if (pvpProfile == null || pvpProfile->IsLoaded != 0x01 || !_excelService.TryGetRow<PvPSeriesLevel>(pvpProfile->GetSeriesCurrentRank(), out var pvpSeriesLevel))
-            return;
+            return false;
 
         var claimedRank = pvpProfile->GetSeriesClaimedRank();
         var currentRank = pvpProfile->GetSeriesCurrentRank();
 
-        var job = _clientState.LocalPlayer!.ClassJob.Value.Abbreviation;
-        var levelLabel = (_textService.GetAddonText(14860) ?? "Series Level").Trim().Replace(":", "");
+        var levelLabel = _textService.GetAddonText(14860).Trim().Replace(":", ""); // "Series Level: "
         var rank = currentRank > 30 ? 30 : currentRank; // 30 = Series Max Rank, hopefully in the future too
         var level = rank.ToString().Aggregate("", (str, chr) => str + (char)(SeIconChar.Number0 + byte.Parse(chr.ToString())));
         var star = currentRank > claimedRank ? '*' : ' ';
-        var requiredExperience = pvpSeriesLevel.Unknown0;
+        var requiredExperience = pvpSeriesLevel.ExpToNext;
 
-        SetText($"{job}  {levelLabel} {level}{star}   {pvpProfile->SeriesExperience}/{requiredExperience}");
+        SetText($"{classJob.Abbreviation}  {levelLabel} {level}{star}   {pvpProfile->SeriesExperience}/{requiredExperience}");
         SetExperience(pvpProfile->SeriesExperience, requiredExperience);
 
         if (!Config.DisableColorChanges)
             SetColor(65, 35); // trying to make it look like the xp bar in the PvP Profile window and failing miserably. eh, good enough
+
+        return true;
     }
 
-    private void OverwriteWithSanctuaryBar()
+    private bool OverwriteWithSanctuaryBar(ClassJob classJob)
     {
+        if (GameMain.Instance()->CurrentTerritoryIntendedUseId != 49)
+            return false;
+
         var mjiManager = MJIManager.Instance();
-
         if (mjiManager == null || !_excelService.TryGetRow<MJIRank>(mjiManager->IslandState.CurrentRank, out var mjiRank))
-            return;
+            return false;
 
-        var job = Config.SanctuaryBarHideJob ? "" : _clientState.LocalPlayer!.ClassJob.Value.Abbreviation + "  ";
-        var levelLabel = (_textService.GetAddonText(14252) ?? "Sanctuary Rank").Trim().Replace(":", "");
+        var job = Config.SanctuaryBarHideJob ? "" : classJob.Abbreviation + "  ";
+        var levelLabel = _textService.GetAddonText(14252).Trim().Replace(":", ""); // "Sanctuary Rank:"
         var level = mjiManager->IslandState.CurrentRank.ToString().Aggregate("", (str, chr) => str + (char)(SeIconChar.Number0 + byte.Parse(chr.ToString())));
         var requiredExperience = mjiRank.ExpToNext;
 
@@ -212,6 +205,130 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
 
         if (!Config.DisableColorChanges)
             SetColor(25, 60, 255); // blue seems nice.. just like the sky ^_^
+
+        return true;
+    }
+
+    private bool OverwriteWithCosmicResearchBar(ClassJob classJob)
+    {
+        if (GameMain.Instance()->CurrentTerritoryIntendedUseId != 60)
+            return false;
+
+        var wksManager = WKSManager.Instance();
+        if (wksManager == null || wksManager->Research == null || !wksManager->Research->IsLoaded)
+            return false;
+
+        if (!(classJob.IsCrafter() || classJob.IsGatherer()))
+            return false;
+
+        var job = classJob.Abbreviation;
+        var toolClassId = (byte)(classJob.RowId - 7);
+        var stage = wksManager->Research->CurrentStages[toolClassId - 1];
+        var nextStage = wksManager->Research->UnlockedStages[toolClassId - 1];
+
+        if (stage == 9)
+        {
+            if (Config.ShowCosmicToolScore)
+            {
+                var score = wksManager->Scores[toolClassId - 1];
+                if (score < 500000)
+                {
+                    var max = score switch
+                    {
+                        >= 150000 => 500000,
+                        >= 50000 => 150000,
+                        _ => 50000,
+                    };
+
+                    using var rssb = new RentedSeStringBuilder();
+                    SetText(rssb.Builder
+                        .Append(job)
+                        .Append("  ")
+                        .Append(_seStringEvaluator.EvaluateFromAddon(16852, [score]))
+                        .Append(" / ")
+                        .Append(_seStringEvaluator.EvaluateFromAddon(16852, [max]))
+                        .GetViewAsSpan());
+
+                    SetExperience(score, max);
+
+                    if (!Config.DisableColorChanges)
+                        SetColor(30, 60, 170);
+
+                    return true;
+                }
+            }
+
+            SetText($"{job} {_textService.GetAddonText(6167)}"); // Complete
+            SetExperience(0, 0);
+
+            return true;
+        }
+
+        if (!_excelService.TryGetRow<RawRow>("WKSCosmoToolClass", toolClassId, out var toolClassRow))
+            return false;
+
+        if (!_excelService.TryGetRow<RawRow>("WKSCosmoToolDataAmount", toolClassRow.ReadUInt8(0x8E), out var dataAmountRow)) // Unknown40
+            return false;
+
+        byte selectedType = 0;
+        var lowestPercentage = float.MaxValue;
+
+        for (byte type = 1; type <= 4; type++)
+        {
+            if (!wksManager->Research->IsTypeAvailable(toolClassId, type))
+                break;
+
+            var neededXP = wksManager->Research->GetNeededAnalysis(toolClassId, type);
+            if (neededXP == 0)
+                continue;
+
+            var currentXP = wksManager->Research->GetCurrentAnalysis(toolClassId, type);
+            if (currentXP >= neededXP)
+                continue;
+
+            var percentage = (float)currentXP / neededXP;
+            if (percentage < lowestPercentage)
+            {
+                lowestPercentage = percentage;
+                selectedType = type;
+            }
+        }
+
+        if (selectedType == 0)
+        {
+            for (byte type = 1; type <= 4; type++)
+            {
+                if (!wksManager->Research->IsTypeAvailable(toolClassId, type))
+                    break;
+
+                selectedType = type;
+            }
+        }
+
+        if (selectedType == 0)
+            return false;
+
+        var toolNameId = toolClassRow.ReadUInt16((nuint)(8 * (selectedType - 1) + 0x70));
+
+        if (!_excelService.TryGetRow<WKSCosmoToolName>(toolNameId, out var toolNameRow))
+            return false;
+
+        var toolName = toolNameRow.Unknown0.ExtractText();
+        var finalCurrentXP = wksManager->Research->GetCurrentAnalysis(toolClassId, selectedType);
+        var finalNeededXP = wksManager->Research->GetNeededAnalysis(toolClassId, selectedType);
+        var star = stage < nextStage ? '*' : ' ';
+
+        SetText($"{job} {toolName}{star}   {finalCurrentXP}/{finalNeededXP}");
+        SetExperience(finalCurrentXP, finalNeededXP);
+
+        if (!Config.DisableColorChanges)
+            SetColor(30, 60, 170);
+        return true;
+    }
+
+    private void SetText(ReadOnlySpan<byte> span)
+    {
+        AtkStage.Instance()->GetStringArrayData(StringArrayType.Hud)->SetValue(69, span);
     }
 
     private void SetText(string text)
@@ -244,10 +361,9 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
         agentHUD->ExpLevel = 0;
         agentHUD->ExpContentLevel = 0;
 
-        agentHUD->ExpIsLevelSynced = false;
-        agentHUD->ExpUnkBool2 = false;
-        agentHUD->ExpIsMaxLevel = false;
-        agentHUD->ExpIsInEureka = false;
+        agentHUD->ExpFlags = AgentHudExpFlag.None;
+
+        SetColor();
     }
 
     private void SetColor(byte red = 100, byte green = 100, byte blue = 100)

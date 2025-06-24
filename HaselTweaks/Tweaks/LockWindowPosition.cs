@@ -1,21 +1,7 @@
-using System.Linq;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselCommon.Extensions.Dalamud;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
 using AtkEventInterface = FFXIVClientStructs.FFXIV.Component.GUI.AtkModuleInterface.AtkEventInterface;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace HaselTweaks.Tweaks;
 
@@ -163,7 +149,7 @@ public unsafe partial class LockWindowPosition : IConfigurableTweak
                     {
                         _hoveredWindowName = name;
                         _hoveredWindowPos = new(atkUnitBase->X, atkUnitBase->Y);
-                        _hoveredWindowSize = new(atkUnitBase->WindowNode->AtkResNode.Width, atkUnitBase->WindowNode->AtkResNode.Height - 7);
+                        _hoveredWindowSize = new(atkUnitBase->WindowNode->Width, atkUnitBase->WindowNode->Height - 7);
                     }
                     else
                     {
@@ -291,14 +277,14 @@ public unsafe partial class LockWindowPosition : IConfigurableTweak
 
     private void AddMenuEntry(string text, int eventParam)
     {
-        var label = new SeStringBuilder()
-            .AddUiForeground("\uE078 ", 32)
-            .AddText(text)
-            .Encode();
+        using var rssb = new RentedSeStringBuilder();
 
         AgentContext.Instance()->AddMenuItem(
-            label,
-            (AtkEventInterface*)Unsafe.AsPointer(ref AtkStage.Instance()->RaptureAtkUnitManager->WindowContextMenuHandler),
+            rssb.Builder
+                .AppendHaselTweaksPrefix()
+                .Append(text)
+                .GetViewAsSpan(),
+            &AtkStage.Instance()->RaptureAtkUnitManager->WindowContextMenuHandler,
             eventParam);
     }
 }

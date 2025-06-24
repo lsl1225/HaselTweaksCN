@@ -1,14 +1,5 @@
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using HaselTweaks.Structs;
-using Lumina.Text.ReadOnly;
-using Microsoft.Extensions.Logging;
 
 namespace HaselTweaks.Tweaks;
 
@@ -65,10 +56,10 @@ public unsafe partial class CustomChatMessageFormats : IConfigurableTweak
 
     private void OnLanguageChange(string langCode)
     {
-        if (IsConfigWindowOpen)
+        if (_isConfigWindowOpen)
         {
-            CachedLogKindRows = GenerateLogKindCache();
-            CachedTextColor = GenerateTextColor();
+            _cachedLogKindRows = GenerateLogKindCache();
+            _cachedTextColor = GenerateTextColor();
         }
     }
 

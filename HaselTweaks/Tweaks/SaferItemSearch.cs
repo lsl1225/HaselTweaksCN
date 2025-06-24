@@ -1,12 +1,5 @@
-using System.Collections.Generic;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Network.Structures;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using HaselCommon.Services;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
 
 namespace HaselTweaks.Tweaks;
 
@@ -75,7 +68,7 @@ public unsafe partial class SaferItemSearch : ITweak
         if (addon == null)
             return;
 
-        addon->ComparePrices->AtkComponentBase.SetEnabledState(!_isSearching);
+        addon->ComparePrices->SetEnabledState(!_isSearching);
     }
 
     private void OnListingsStart()

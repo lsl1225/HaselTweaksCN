@@ -1,16 +1,7 @@
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface.Textures;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Tweaks;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Windows;
 
@@ -25,7 +16,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
     private readonly ImGuiContextMenuService _imGuiContextMenuService;
     private readonly GlamourDresserArmoireAlert _tweak;
 
-    private static AddonMiragePrismPrismBox* Addon => GetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox");
+    public bool IsUpdatePending { get; set; }
 
     [AutoPostConstruct]
     private void Initialize()
@@ -42,7 +33,11 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
     }
 
     public override bool DrawConditions()
-        => Addon != null && Addon->AtkUnitBase.IsVisible && _tweak.Categories.Count != 0;
+    {
+        return TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox", out var addon)
+            && addon->IsVisible
+            && _tweak.Categories.Count != 0;
+    }
 
     public override void Draw()
     {
@@ -64,10 +59,13 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
             }
         }
 
-        Position = new(
-            Addon->AtkUnitBase.X + Addon->AtkUnitBase.GetScaledWidth(true) - 12,
-            Addon->AtkUnitBase.Y + 9
-        );
+        if (TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox", out var addon))
+        {
+            Position = new(
+                addon->X + addon->GetScaledWidth(true) - 12,
+                addon->Y + 9
+            );
+        }
     }
 
     public void DrawItem(uint itemIndex, Item item, bool isHq)
@@ -84,7 +82,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
             if (ImGui.Selectable(
                 "##Selectable",
                 false,
-                _tweak.UpdatePending
+                IsUpdatePending
                     ? ImGuiSelectableFlags.Disabled
                     : ImGuiSelectableFlags.None,
                 ImGuiHelpers.ScaledVector2(ImGui.GetContentRegionAvail().X, IconSize.Y)))
@@ -96,7 +94,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
                 ImGui.GetStyle().ItemInnerSpacing.X,
                 IconSize.Y * ImGuiHelpers.GlobalScale / 2f - ImGui.GetTextLineHeight() / 2f - 1));
 
-            ImGui.TextUnformatted(_textService.GetItemName(item.RowId));
+            ImGui.TextUnformatted(_textService.GetItemName(item.RowId).ExtractText().StripSoftHyphen());
         }
 
         _imGuiContextMenuService.Draw("ItemContextMenu", builder =>
@@ -112,6 +110,6 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 
     private void RestoreItem(uint itemIndex)
     {
-        _tweak.UpdatePending = MirageManager.Instance()->RestorePrismBoxItem(itemIndex);
+        IsUpdatePending = MirageManager.Instance()->RestorePrismBoxItem(itemIndex);
     }
 }

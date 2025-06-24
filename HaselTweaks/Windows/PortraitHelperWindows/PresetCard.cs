@@ -1,28 +1,14 @@
 using System.IO;
-using System.Linq;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Memory;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using HaselCommon.Extensions.Collections;
-using HaselCommon.Services;
-using HaselTweaks.Config;
 using HaselTweaks.Enums.PortraitHelper;
-using HaselTweaks.Extensions;
 using HaselTweaks.Records.PortraitHelper;
-using HaselTweaks.Utils;
 using HaselTweaks.Windows.PortraitHelperWindows.Overlays;
-using ImGuiNET;
 using Lumina.Data.Files;
-using Lumina.Excel.Sheets;
-using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -34,8 +20,8 @@ public partial class PresetCard : IDisposable
 {
     public static readonly Vector2 PortraitSize = new(576, 960); // native texture size
 
-    private static readonly uint ButtonActiveColor = Color.White with { A = 0.3f };
-    private static readonly uint ButtonHoveredColor = Color.White with { A = 0.2f };
+    private static readonly Color ButtonActiveColor = Color.White with { A = 0.3f };
+    private static readonly Color ButtonHoveredColor = Color.White with { A = 0.2f };
 
     private readonly ILogger<PresetCard> _logger;
     private readonly IDalamudPluginInterface _pluginInterface;
@@ -162,7 +148,7 @@ public partial class PresetCard : IDisposable
         ImGui.SetCursorPos(cursorPos);
 
         {
-            using var Color = ImRaii.PushColor(ImGuiCol.Button, 0)
+            using var color = ImRaii.PushColor(ImGuiCol.Button, 0)
                 .Push(ImGuiCol.ButtonActive, ButtonActiveColor)
                 .Push(ImGuiCol.ButtonHovered, ButtonHoveredColor);
             using var rounding = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0);
@@ -220,7 +206,7 @@ public partial class PresetCard : IDisposable
                 {
                     ImGui.Separator();
 
-                    using (ImRaii.PushColor(ImGuiCol.Text, (uint)Color.Red))
+                    using (Color.Red.Push(ImGuiCol.Text))
                     {
                         ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.PresetCard.Tooltip.ElementsNotApplied.Title"));
 

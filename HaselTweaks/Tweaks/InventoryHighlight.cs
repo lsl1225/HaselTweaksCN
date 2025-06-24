@@ -1,19 +1,9 @@
-using System.Collections.Generic;
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Config;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.Interop;
-using HaselCommon.Utils;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Tweaks;
 
@@ -373,7 +363,7 @@ public unsafe partial class InventoryHighlight : IConfigurableTweak
         if (component == null)
             return;
 
-        var ownerNode = (AtkResNode*)component->AtkComponentBase.OwnerNode;
+        var ownerNode = (AtkResNode*)component->OwnerNode;
         if (ownerNode == null)
             return;
 
@@ -432,7 +422,7 @@ public unsafe partial class InventoryHighlight : IConfigurableTweak
             if (component == null)
                 continue;
 
-            SetSlotBrightness((AtkResNode*)component->AtkComponentBase.OwnerNode, 100);
+            SetSlotBrightness((AtkResNode*)component->OwnerNode, 100);
         }
     }
 
@@ -473,6 +463,6 @@ public unsafe partial class InventoryHighlight : IConfigurableTweak
 
     private uint NormalizeItemId(uint itemId)
         => Config.IgnoreQuality
-            ? GetBaseItemId(itemId)
+            ? ItemUtil.GetBaseId(itemId).ItemId
             : itemId;
 }

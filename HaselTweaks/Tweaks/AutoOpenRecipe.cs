@@ -1,19 +1,10 @@
-using System.Linq;
 using System.Threading;
 using Dalamud.Game.Inventory;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using HaselCommon.Extensions.Collections;
-using HaselCommon.Services;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
-using Lumina.Extensions;
-using Microsoft.Extensions.Logging;
 using AgentRecipeNote = FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentRecipeNote;
 
 namespace HaselTweaks.Tweaks;
@@ -64,7 +55,7 @@ public unsafe partial class AutoOpenRecipe : ITweak
         if (data.Item.ContainerType is not (GameInventoryType.Inventory1 or GameInventoryType.Inventory2 or GameInventoryType.Inventory3 or GameInventoryType.Inventory4 or GameInventoryType.KeyItems)) // only handle inventory
             return;
 
-        if (Conditions.Instance()->Crafting || Conditions.Instance()->Crafting40 || AgentRecipeNote.Instance()->ActiveCraftRecipeId != 0) // skip if crafting
+        if (Conditions.Instance()->Crafting || Conditions.Instance()->ExecutingCraftingAction || AgentRecipeNote.Instance()->ActiveCraftRecipeId != 0) // skip if crafting
             return;
 
         if (DateTime.UtcNow - _lastTimeRecipeOpened < TimeSpan.FromSeconds(3))
@@ -297,7 +288,7 @@ public unsafe partial class AutoOpenRecipe : ITweak
         if (recipe.CraftType.RowId == craftType)
             agentRecipeNote->OpenRecipeByRecipeIdInternal(recipe.RowId);
         else
-            agentRecipeNote->OpenRecipeByItemId(resultItemId);
+            agentRecipeNote->SearchRecipeByItemId(resultItemId);
 
         return true;
     }

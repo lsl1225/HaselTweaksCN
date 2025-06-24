@@ -1,27 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using System.Reflection;
-#if !DEBUG
-using System.Text.RegularExpressions;
-#endif
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Enums;
-using HaselTweaks.Extensions;
-using HaselTweaks.Interfaces;
-using HaselTweaks.Services;
-using ImGuiNET;
+using System.Threading.Tasks;
+using HaselCommon.Windows;
 
 namespace HaselTweaks.Windows;
 
 [RegisterSingleton, AutoConstruct]
 public partial class PluginWindow : SimpleWindow
 {
-    private const uint SidebarWidth = 250;
+    private const uint SidebarWidth = 260;
     private readonly TextService _textService;
     private readonly ITextureProvider _textureProvider;
     private readonly TweakManager _tweakManager;
@@ -29,21 +15,9 @@ public partial class PluginWindow : SimpleWindow
     private ITweak[] _orderedTweaks;
     private ITweak? _selectedTweak;
 
-#if !DEBUG
-    [GeneratedRegex("\\.0$")]
-    private static partial Regex VersionPatchZeroRegex();
-#endif
-
     [AutoPostConstruct]
     private void Initialize()
     {
-        Size = new Vector2(766, 600);
-        SizeConstraints = new()
-        {
-            MinimumSize = new Vector2(766, 600),
-            MaximumSize = new Vector2(4096, 2160)
-        };
-
         SizeCondition = ImGuiCond.Always;
 
         Flags |= ImGuiWindowFlags.NoResize;
@@ -51,16 +25,16 @@ public partial class PluginWindow : SimpleWindow
         AllowClickthrough = false;
         AllowPinning = false;
 
-        SortTweaksbyName();
+        SortTweaksByName();
     }
 
-    protected override void OnLanguageChanged(string langCode)
+    public override void OnLanguageChanged(string langCode)
     {
         base.OnLanguageChanged(langCode);
-        SortTweaksbyName();
+        SortTweaksByName();
     }
 
-    private void SortTweaksbyName()
+    private void SortTweaksByName()
     {
         _orderedTweaks = [.. _tweaks.OrderBy(tweak => _textService.TryGetTranslation(tweak.GetInternalName() + ".Tweak.Name", out var name) ? name : tweak.GetInternalName())];
     }
@@ -117,7 +91,6 @@ public partial class PluginWindow : SimpleWindow
             ImGui.TableNextColumn();
 
             var status = tweak.Status;
-            var fixY = false;
 
             if (status is TweakStatus.InitializationFailed or TweakStatus.Outdated)
             {
@@ -155,13 +128,11 @@ public partial class PluginWindow : SimpleWindow
 
                 drawList.PathLineTo(pos);
                 drawList.PathLineTo(pos + size);
-                drawList.PathStroke(Color.Red, ImDrawFlags.None, frameHeight / 5f * 0.5f);
+                drawList.PathStroke(Color.Red.ToUInt(), ImDrawFlags.None, frameHeight / 5f * 0.5f);
 
                 drawList.PathLineTo(pos + new Vector2(0, size.Y));
                 drawList.PathLineTo(pos + new Vector2(size.X, 0));
-                drawList.PathStroke(Color.Red, ImDrawFlags.None, frameHeight / 5f * 0.5f);
-
-                fixY = true;
+                drawList.PathStroke(Color.Red.ToUInt(), ImDrawFlags.None, frameHeight / 5f * 0.5f);
             }
             else
             {
@@ -177,20 +148,14 @@ public partial class PluginWindow : SimpleWindow
             }
 
             ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
 
-            if (fixY)
+            using var _ = status switch
             {
-                ImGuiUtils.PushCursorY(3); // if i only knew why this happens
-            }
-
-            if (status is TweakStatus.InitializationFailed or TweakStatus.Outdated)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Text, (uint)Color.Red);
-            }
-            else if (status is not TweakStatus.Enabled)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Text, (uint)Color.Grey);
-            }
+                TweakStatus.InitializationFailed or TweakStatus.Outdated => Color.Red.Push(ImGuiCol.Text),
+                not TweakStatus.Enabled => Color.Grey.Push(ImGuiCol.Text),
+                _ => null
+            };
 
             if (!_textService.TryGetTranslation(tweakName + ".Tweak.Name", out var name))
                 name = tweakName;
@@ -214,11 +179,6 @@ public partial class PluginWindow : SimpleWindow
                     _selectedTweak = null;
                 }
             }
-
-            if (status is TweakStatus.InitializationFailed or TweakStatus.Outdated or not TweakStatus.Enabled)
-            {
-                ImGui.PopStyleColor();
-            }
         }
     }
 
@@ -236,7 +196,7 @@ public partial class PluginWindow : SimpleWindow
             if (_textureProvider.GetFromManifestResource(Assembly.GetExecutingAssembly(), "HaselTweaks.Assets.Logo.png").TryGetWrap(out var logo, out var _))
             {
                 var logoSize = ImGuiHelpers.ScaledVector2(256, 128);
-                ImGui.SetCursorPos(contentAvail / 2 - logoSize / 2 + new Vector2(ImGui.GetStyle().ItemSpacing.X, 0));
+                ImGui.SetCursorPos(contentAvail / 2 - logoSize / 2 + ImGui.GetStyle().ItemSpacing.XOnly());
                 ImGui.Image(logo.ImGuiHandle, logoSize);
             }
 
@@ -247,16 +207,28 @@ public partial class PluginWindow : SimpleWindow
             ImGui.TextUnformatted("•");
             ImGui.SameLine();
             ImGuiUtils.DrawLink("Ko-fi", _textService.Translate("HaselTweaks.Config.KoFiLink.Tooltip"), "https://ko-fi.com/haselnussbomber");
+            ImGui.SameLine();
+            ImGui.TextUnformatted("•");
+            ImGui.SameLine();
+            ImGui.TextUnformatted(_textService.Translate("HaselTweaks.Config.Licenses"));
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && Service.TryGet<LicensesWindow>(out var licensesWindow))
+                {
+                    Task.Run(licensesWindow.Toggle);
+                }
+            }
 
             // version, bottom right
 #if DEBUG
             ImGui.SetCursorPos(cursorPos + contentAvail - ImGui.CalcTextSize("dev"));
             ImGuiUtils.DrawLink("dev", _textService.Translate("HaselTweaks.Config.DevGitHubLink.Tooltip"), $"https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev");
 #else
-            var version = GetType().Assembly.GetName().Version;
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
             if (version != null)
             {
-                var versionString = "v" + VersionPatchZeroRegex().Replace(version.ToString(), "");
+                var versionString = "v" + version.ToString(3);
                 ImGui.SetCursorPos(cursorPos + contentAvail - ImGui.CalcTextSize(versionString));
                 ImGuiUtils.DrawLink(versionString, _textService.Translate("HaselTweaks.Config.ReleaseNotesLink.Tooltip"), $"https://github.com/Haselnussbomber/HaselTweaks/releases/tag/{versionString}");
             }

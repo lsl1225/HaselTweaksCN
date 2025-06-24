@@ -1,17 +1,5 @@
 using System.Globalization;
-using System.Linq;
-using Dalamud.Interface;
 using Dalamud.Interface.ImGuiSeStringRenderer;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Enums;
-using HaselTweaks.Extensions;
-using HaselTweaks.Interfaces;
-using ImGuiNET;
-using Lumina.Text.ReadOnly;
 
 namespace HaselTweaks.Config;
 
@@ -70,7 +58,7 @@ public partial class ConfigGui
 
                 ImGui.TableNextColumn();
 
-                ImGui.TextUnformatted(_textService.Translate($"{_tweakName}.Config.{fieldName}.Label"));
+                ImGuiHelpers.SafeTextWrapped(_textService.Translate($"{_tweakName}.Config.{fieldName}.Label"));
 
                 if (ImGui.IsItemClicked())
                 {
@@ -82,7 +70,7 @@ public partial class ConfigGui
 
                 if (_textService.TryGetTranslation($"{_tweakName}.Config.{fieldName}.Description", out var description))
                 {
-                    ImGuiHelpers.SeStringWrapped(ReadOnlySeString.FromText(description), new SeStringDrawParams() { Color = Color.Grey });
+                    ImGuiHelpers.SeStringWrapped(ReadOnlySeString.FromText(description), new SeStringDrawParams() { Color = Color.Grey.ToUInt() });
                 }
 
                 drawAfterDescription?.Invoke();
@@ -296,7 +284,7 @@ public partial class ConfigGui
     public void DrawNetworkWarning()
     {
         ImGui.SameLine();
-        ImGuiUtils.Icon(FontAwesomeIcon.Bolt, Color.Yellow);
+        ImGuiUtils.Icon(FontAwesomeIcon.Bolt, Color.Yellow.ToUInt());
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();

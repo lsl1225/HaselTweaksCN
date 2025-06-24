@@ -1,14 +1,7 @@
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using HaselTweaks.Structs;
-using Microsoft.Extensions.Logging;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace HaselTweaks.Tweaks;
 
@@ -329,7 +322,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
                     UpdateCharacter(addonCharacter);
                     break;
                 case "CharacterRepute" when Config.HandleCharacterRepute:
-                    UpdateCharacterRepute(addonCharacter, (AddonCharacterRepute*)unitBase);
+                    UpdateCharacterRepute(addonCharacter, (HaselAddonCharacterRepute*)unitBase);
                     break;
             }
         }
@@ -368,7 +361,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
             values[2].Type = ValueType.UInt;
             values[2].UInt = 0;
 
-            addon->AtkUnitBase.FireCallback(3, values);
+            addon->FireCallback(3, values);
         }
         else
         {
@@ -400,7 +393,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
             values[2].Type = ValueType.UInt;
             values[2].UInt = 2;
 
-            addon->AtkUnitBase.FireCallback(3, values);
+            addon->FireCallback(3, values);
         }
         else
         {
@@ -518,8 +511,8 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
             if (addon->CurrentPageIndex > 0)
             {
                 var page = addon->CurrentPageIndex - 1;
-                addon->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, page + 10, &atkEvent);
-                addon->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, 9, &atkEvent);
+                addon->ReceiveEvent(AtkEventType.ButtonClick, page + 10, &atkEvent);
+                addon->ReceiveEvent(AtkEventType.ButtonClick, 9, &atkEvent);
             }
         }
         else if (eventParam == 10)
@@ -527,12 +520,12 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
             if (addon->CurrentPageIndex < 4)
             {
                 var page = addon->CurrentPageIndex + 1;
-                addon->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, page + 10, &atkEvent);
+                addon->ReceiveEvent(AtkEventType.ButtonClick, page + 10, &atkEvent);
             }
         }
         else
         {
-            addon->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, eventParam, &atkEvent);
+            addon->ReceiveEvent(AtkEventType.ButtonClick, eventParam, &atkEvent);
         }
     }
 
@@ -631,7 +624,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
             return;
 
         numberArray->SetValue(0, newTab);
-        addon->AtkUnitBase.OnRequestedUpdate(atkStage->GetNumberArrayData(), atkStage->GetStringArrayData());
+        addon->OnRequestedUpdate(atkStage->GetNumberArrayData(), atkStage->GetStringArrayData());
     }
 
     private void UpdateInventoryBuddy(AddonInventoryBuddy* addon)
@@ -670,16 +663,16 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
     {
         if (addon->JobDropdown == null ||
             addon->JobDropdown->List == null ||
-            addon->JobDropdown->List->AtkComponentBase.OwnerNode == null ||
-            addon->JobDropdown->List->AtkComponentBase.OwnerNode->AtkResNode.IsVisible())
+            addon->JobDropdown->List->OwnerNode == null ||
+            addon->JobDropdown->List->OwnerNode->IsVisible())
         {
             return;
         }
 
         if (addon->OrderDropdown == null ||
             addon->OrderDropdown->List == null ||
-            addon->OrderDropdown->List->AtkComponentBase.OwnerNode == null ||
-            addon->OrderDropdown->List->AtkComponentBase.OwnerNode->AtkResNode.IsVisible())
+            addon->OrderDropdown->List->OwnerNode == null ||
+            addon->OrderDropdown->List->OwnerNode->IsVisible())
         {
             return;
         }
@@ -737,24 +730,30 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
         addon->SetTab(tabIndex);
     }
 
-    private void UpdateCharacterRepute(AddonCharacter* addonCharacter, AddonCharacterRepute* addon)
+    private void UpdateCharacterRepute(AddonCharacter* addonCharacter, HaselAddonCharacterRepute* addon)
     {
+        if (addon->ExpansionsDropDownList == null || addon->ExpansionsDropDownList->IsOpen)
+            return;
+
+        var currentIndex = addon->ExpansionsDropDownList->GetSelectedItemIndex();
+
         // prev embedded addon
-        if (Config.HandleCharacter && (addon->SelectedExpansion + _wheelState < 0))
+        if (Config.HandleCharacter && (currentIndex + _wheelState < 0))
         {
             UpdateCharacter(addonCharacter);
             return;
         }
 
-        var tabIndex = GetTabIndex(addon->SelectedExpansion, addon->ExpansionsCount);
-
-        if (addon->SelectedExpansion == tabIndex)
+        var itemCount = addon->ExpansionsDropDownList->List->GetItemCount();
+        var tabIndex = GetTabIndex(currentIndex, itemCount);
+        if (currentIndex == tabIndex)
             return;
 
         var atkEvent = new AtkEvent();
         var data = new AtkEventData();
-        data.ListItemData.SelectedIndex = tabIndex; // technically the index of an id array, but it's literally the same value
+        data.ListItemData.SelectedIndex = tabIndex;
         addon->AtkUnitBase.ReceiveEvent((AtkEventType)37, 0, &atkEvent, &data);
 
+        addon->ExpansionsDropDownList->SelectItem(tabIndex);
     }
 }

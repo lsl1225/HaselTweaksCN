@@ -1,10 +1,5 @@
-using Dalamud.Game.Addon.Lifecycle;
-using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
 
 namespace HaselTweaks.Tweaks;
 
@@ -57,8 +52,8 @@ public unsafe partial class HideMSQComplete : ITweak
         if (!TryGetAddon<AtkUnitBase>(AgentId.ScenarioTree, out var addon))
             return;
 
-        GetNode<AtkResNode>(addon, 11)->ToggleVisibility(visible); // AtkTextNode
-        GetNode<AtkResNode>(addon, 12)->ToggleVisibility(visible); // AtkNineGridNode
-        GetNode<AtkResNode>(addon, 13)->ToggleVisibility(visible); // AtkComponentButton
+        addon->GetNodeById(11)->ToggleVisibility(visible); // AtkTextNode
+        addon->GetNodeById(12)->ToggleVisibility(visible); // AtkNineGridNode
+        addon->GetNodeById(13)->ToggleVisibility(visible); // AtkComponentButton
     }
 }

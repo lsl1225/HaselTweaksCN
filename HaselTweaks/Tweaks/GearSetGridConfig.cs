@@ -1,5 +1,3 @@
-using Dalamud.Interface.Utility.Raii;
-
 namespace HaselTweaks.Tweaks;
 
 public class GearSetGridConfiguration
@@ -20,7 +18,7 @@ public partial class GearSetGrid
 
     public void OnConfigChange(string fieldName)
     {
-        if (fieldName == "RegisterCommand")
+        if (Status == TweakStatus.Enabled && fieldName == "RegisterCommand")
         {
             _gsgCommand?.SetEnabled(Config.RegisterCommand);
         }

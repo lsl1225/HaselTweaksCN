@@ -1,5 +1,122 @@
 # Changelog
 
+## [36.0.0] (2025-06-13)
+
+### New Tweak: Enhanced Hunting Log
+
+Configuration options:
+
+- Remember last selected class  
+  The game's default behaviour is to reset the window to the first tab.
+- Automatically select the current class  
+  Only works if a matching class was found. Overrides the option \"Remember last selected class\" in that case.
+- Automatically set the filter to "Show Incomplete" (Thanks to @Bloodsoul)
+
+## [35.1.2] (2025-05-27)
+
+Update for 7.25.
+
+## [35.1.1] (2025-05-07)
+
+### Enhanced Experience Bar
+
+- **Fixed:** Depending on the language, `<nbsp>` were printed in the cosmic class score numbers.
+
+## [35.1.0] (2025-05-05)
+
+### Enhanced Experience Bar
+
+- **Added:** An option to show the cosmic class score needed for achievements after completing cosmic research (default on).
+- **Changed:** The Cosmic Research Bar is now smarter and will prioritize the dataset with the lowest experience percentage instead of just using the highest available type.
+
+## [35.0.3] (2025-05-03)
+
+### Enhanced Material List
+
+- **Fixed:** List didn't properly load anymore.
+- **Fixed:** Gathering points markers were missing the type next to the level in their tooltips.
+
+## [35.0.2] (2025-05-02)
+
+### HaselTweaks
+
+- **Fixed:** For some tweaks, changes to configuration options were applied even if the tweak was disabled.
+
+### Scrollable Tabs
+
+- **Fixed:** Scrolling in the Reputation tab of the Character window was not correctly implemented, causing issues when all allied societies of an expansion weren't unlocked.
+- **Fixed:** After changing the expansion in the Reputation tab of the Character window using mouse scrolling, the highlighted expansion was not updated in the dropdown.
+
+## [35.0.1] (2025-05-01)
+
+### Restore Golden City
+
+- **Fixed:** The layout of other zones were impacted by an incorrect return type. Sorry about that!
+
+## [35.0.0] (2025-05-01)
+
+### New Tweak: Restore Golden City
+
+When the quest “Dawntrail” is completed, this tweak will restore the Golden City to its former glory - without New Game+.
+
+## [34.1.1] (2025-04-26)
+
+### Enhanced Experience Bar
+
+- **Fixed:** Cosmic Research Bar didn't display analysis progress for type 4.
+
+## [34.1.0] (2025-04-23)
+
+### Enhanced Experience Bar
+
+- **Added:** A new Cosmic Research Bar, which displays the dataset for your current job and its analysis progress in Cosmic Exploration (default on).  
+  I hope I got this right. 🙂 It should always show the highest available stage/type.  
+  *Note:* If you're leveling a crafter or gatherer job and want to see the normal experience bar, you can disable the "Always show Cosmic Research Bar in Cosmic Exploration" option in the settings.
+
+### Portrait Helper
+
+- **Fixed:** The visibility of nodes in the portrait editor window didn't properly reset when an overlay was open and the plugin was unloaded.
+
+## [34.0.6] (2025-04-11)
+
+### Custom Chat Message Formats
+
+- **Fixed:** Color picker was unusable, which led me to rewriting a lot of color related things plugin-wide.
+- **Fixed:** Enabling/disabling an entry would not immediately apply the change.
+
+## [34.0.5] (2025-04-09)
+
+### Forced Cutscene Sounds
+
+- **Fixed:** The game could crash under certain conditions when a cutscene ended.
+
+## [34.0.4] (2025-04-06)
+
+### Cast Bar Aetheryte Name
+
+- **Fixed:** In some cases, the destination name was not formatted correctly.
+
+## [34.0.3] (2025-03-29)
+
+### Bigger Item Dyeing Preview
+
+- **Fixed:** Nodes were out of place and a button was hiding behind the preview.
+
+## [34.0.2] (2025-03-27)
+
+Patch 7.2 fixes for:
+
+- Enhanced Experience Bar - Max Level Override
+- Simple Aethernet List
+
+## [34.0.1] (2025-03-26)
+
+Preliminary update for Patch 7.2.
+
+### HaselTweaks
+
+- **Updated:** Chinese Translations (#148, thanks to @cyf5119)
+
 ## [34.0.0] (2025-03-17)
 
 ### New Tweak: Companion Color Preview
@@ -1959,6 +2076,22 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
 [unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev
+[36.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.2...v36.0.0
+[35.1.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.1...v35.1.2
+[35.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.0...v35.1.1
+[35.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.0.3...v35.1.0
+[35.0.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.0.2...v35.0.3
+[35.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.0.1...v35.0.2
+[35.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.0.0...v35.0.1
+[35.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.1.1...v35.0.0
+[34.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.1.0...v34.1.1
+[34.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.6...v34.1.0
+[34.0.6]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.5...v34.0.6
+[34.0.5]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.4...v34.0.5
+[34.0.4]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.3...v34.0.4
+[34.0.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.2...v34.0.3
+[34.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.1...v34.0.2
+[34.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v34.0.0...v34.0.1
 [34.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v33.0.2...v34.0.0
 [33.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v33.0.1...v33.0.2
 [33.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v33.0.0...v33.0.1

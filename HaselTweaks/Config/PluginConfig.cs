@@ -1,17 +1,11 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Dalamud.Configuration;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using HaselTweaks.Config.Migrations;
-using HaselTweaks.Interfaces;
 using HaselTweaks.JsonConverters;
-using HaselTweaks.Tweaks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace HaselTweaks.Config;
 
@@ -103,7 +97,7 @@ public partial class PluginConfig : IPluginConfiguration
 
             if (LastSavedConfigHash != hash)
             {
-                Util.WriteAllTextSafe(PluginInterface!.ConfigFile.FullName, serialized);
+                FilesystemUtil.WriteAllTextSafe(PluginInterface!.ConfigFile.FullName, serialized);
                 LastSavedConfigHash = hash;
                 PluginLog?.Information("Configuration saved.");
             }
@@ -138,6 +132,7 @@ public class TweakConfigs
     public EnhancedIsleworksAgendaConfiguration EnhancedIsleworksAgenda { get; init; } = new();
     public EnhancedLoginLogoutConfiguration EnhancedLoginLogout { get; init; } = new();
     public EnhancedMaterialListConfiguration EnhancedMaterialList { get; init; } = new();
+    public EnhancedMonsterNoteConfiguration EnhancedMonsterNote { get; init; } = new();
     public EnhancedTargetInfoConfiguration EnhancedTargetInfo { get; init; } = new();
     public ForcedCutsceneMusicConfiguration ForcedCutsceneMusic { get; init; } = new();
     public GearSetGridConfiguration GearSetGrid { get; init; } = new();

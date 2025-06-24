@@ -1,9 +1,4 @@
-using System.Numerics;
-using Dalamud.Interface;
 using Dalamud.Interface.Colors;
-using Dalamud.Interface.Utility.Raii;
-using HaselCommon.Gui;
-using ImGuiNET;
 using GameFramework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace HaselTweaks.Tweaks;
@@ -32,8 +27,7 @@ public partial class DTR
         _configGui.DrawConfigurationHeader();
 
         ImGui.TextUnformatted(_textService.Translate("DTR.Config.Explanation.Pre"));
-        using (Color.From(ImGuiColors.DalamudRed).Push(ImGuiCol.Text))
-            ImGui.TextUnformatted(_textService.Translate("DTR.Config.Explanation.DalamudSettings"));
+        ImGuiUtils.TextUnformattedColored(Color.FromVector4(ImGuiColors.DalamudRed), _textService.Translate("DTR.Config.Explanation.DalamudSettings"));
         if (ImGui.IsItemHovered())
         {
             ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);

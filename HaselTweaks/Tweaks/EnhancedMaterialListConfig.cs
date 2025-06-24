@@ -1,4 +1,3 @@
-using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace HaselTweaks.Tweaks;
@@ -26,6 +25,9 @@ public unsafe partial class EnhancedMaterialList
 
     public void OnConfigChange(string fieldName)
     {
+        if (Status != TweakStatus.Enabled)
+            return;
+
         if (fieldName is nameof(Config.EnableZoneNames)
                       or nameof(Config.DisableZoneNameForCrystals)
                       or nameof(Config.DisableClickToOpenMapForCrystals))

@@ -1,18 +1,6 @@
-using System.Collections.Generic;
-using System.Numerics;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Tweaks;
-using HaselTweaks.Utils;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Windows;
 
@@ -27,13 +15,14 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
     private readonly MapService _mapService;
+    private readonly PluginConfig _pluginConfig;
 
     private readonly Dictionary<uint, EObj> _aetherCurrentEObjCache = [];
     private readonly Dictionary<uint, Level> _eObjLevelCache = [];
 
     private bool _hideUnlocked = true;
 
-    private AetherCurrentHelperConfiguration Config => PluginConfig.Tweaks.AetherCurrentHelper;
+    private AetherCurrentHelperConfiguration Config => _pluginConfig.Tweaks.AetherCurrentHelper;
 
     public AetherCurrentCompFlgSet? CompFlgSet { get; set; }
 

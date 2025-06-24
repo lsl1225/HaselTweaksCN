@@ -3,15 +3,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using HaselCommon.Commands;
-using HaselCommon.Extensions.Strings;
-using HaselCommon.Game;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Extensions;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
-using Lumina.Text;
 
 namespace HaselTweaks.Tweaks;
 
@@ -19,6 +10,7 @@ namespace HaselTweaks.Tweaks;
 public unsafe partial class Commands : IConfigurableTweak
 {
     private readonly PluginConfig _pluginConfig;
+    private readonly LanguageProvider _languageProvider;
     private readonly TextService _textService;
     private readonly ExcelService _excelService;
     private readonly ItemService _itemService;
@@ -90,9 +82,9 @@ public unsafe partial class Commands : IConfigurableTweak
             return;
         }
 
-        var isEventItem = IsEventItem(id);
+        var isEventItem = ItemUtil.IsEventItem(id);
         var existsAsEventItem = isEventItem && _excelService.GetSheet<EventItem>().HasRow(id);
-        var existsAsItem = !isEventItem && _excelService.GetSheet<Item>().HasRow(GetBaseItemId(id));
+        var existsAsItem = !isEventItem && _excelService.GetSheet<Item>().HasRow(ItemUtil.GetBaseId(id).ItemId);
 
         if (!existsAsEventItem && !existsAsItem)
         {
@@ -201,6 +193,7 @@ public unsafe partial class Commands : IConfigurableTweak
                 .Append(_textService.TranslateSeString("Commands.Emote", emoteId.ToString(), _textService.GetEmoteName(emoteId)))
                 .GetViewAsSpan());
     }
+
     [CommandHandler("/whatbarding", "Commands.Config.EnableWhatBardingCommand.Description", DisplayOrder: 2)]
     private void OnWhatBardingCommand(string command, string arguments)
     {
@@ -223,8 +216,6 @@ public unsafe partial class Commands : IConfigurableTweak
         var hasBodyRow = _excelService.TryFindRow<BuddyEquip>(row => row.ModelBody == (int)character->DrawData.Equipment(DrawDataContainer.EquipmentSlot.Body).Value, out var bodyRow);
         var hasLegsRow = _excelService.TryFindRow<BuddyEquip>(row => row.ModelLegs == (int)character->DrawData.Equipment(DrawDataContainer.EquipmentSlot.Feet).Value, out var legsRow);
 
-        _excelService.TryGetRow<Stain>(character->DrawData.Equipment(DrawDataContainer.EquipmentSlot.Legs).Stain0, out var stain);
-
         var name = new SeStringBuilder()
             .PushColorType(1)
             .Append(character->GameObject.NameString)
@@ -236,7 +227,7 @@ public unsafe partial class Commands : IConfigurableTweak
             .Append(_textService.TranslateSeString("Commands.WhatBarding.AppearanceOf", name))
             .AppendNewLine()
             .Append($"  {_textService.GetAddonText(4987)}: ")
-            .Append(stain.Name.ExtractText().FirstCharToUpper())
+            .Append(_textService.GetStainName(character->DrawData.Equipment(DrawDataContainer.EquipmentSlot.Legs).Stain0))
             .AppendNewLine()
             .Append($"  {_textService.GetAddonText(4991)}: {(hasTopRow ? topRow.Name.ExtractText() : _textService.GetAddonText(4994))}")
             .AppendNewLine()

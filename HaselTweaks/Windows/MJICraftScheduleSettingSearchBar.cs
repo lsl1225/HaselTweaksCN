@@ -1,17 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Game;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using HaselCommon.Extensions.Collections;
-using HaselCommon.Gui;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Tweaks;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Windows;
 
@@ -41,7 +29,7 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
     }
 
     public override bool DrawConditions()
-        => Addon != null && Addon->AtkUnitBase.IsVisible;
+        => Addon != null && Addon->IsVisible;
 
     public override void OnOpen()
     {
@@ -64,7 +52,7 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
         if (ImGui.InputTextWithHint("##Query", _textService.Translate("EnhancedIsleworksAgenda.MJICraftScheduleSettingSearchBar.QueryHint"), ref _query, 255, ImGuiInputTextFlags.EnterReturnsTrue))
         {
             var evt = new AtkEvent();
-            Addon->AtkUnitBase.ReceiveEvent(AtkEventType.ButtonClick, 6, &evt);
+            Addon->ReceiveEvent(AtkEventType.ButtonClick, 6, &evt);
         }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(LanguageSelectorWidth * ImGuiHelpers.GlobalScale);
@@ -137,12 +125,12 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
         var height = (ImGui.GetTextLineHeight() + ImGui.GetStyle().FramePadding.Y * 2 + ImGui.GetStyle().WindowPadding.Y * 2) * scaledown;
 
         Position = new(
-            Addon->AtkUnitBase.X + 4,
-            Addon->AtkUnitBase.Y + 3 - height * scale
+            Addon->X + 4,
+            Addon->Y + 3 - height * scale
         );
 
         Size = new(
-            (Addon->AtkUnitBase.GetScaledWidth(true) - 8) * scaledown,
+            (Addon->GetScaledWidth(true) - 8) * scaledown,
             height
         );
     }

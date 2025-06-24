@@ -1,14 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using HaselCommon.Gui;
-using ImGuiNET;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Tweaks;
 
@@ -45,6 +36,9 @@ public unsafe partial class EnhancedLoginLogout
 
     public void OnConfigChange(string fieldName)
     {
+        if (Status != TweakStatus.Enabled)
+            return;
+
         switch (fieldName)
         {
             case nameof(Config.ShowPets):

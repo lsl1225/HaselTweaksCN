@@ -1,11 +1,6 @@
 using Dalamud.Game.Gui.ContextMenu;
 using Dalamud.Game.Text;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using HaselCommon.Services;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
 
 namespace HaselTweaks.Tweaks;
 
@@ -87,9 +82,9 @@ public unsafe partial class SearchTheMarkets : ITweak
         if (itemId == 0)
             return;
 
-        itemId = GetBaseItemId(itemId);
+        itemId = ItemUtil.GetBaseId(itemId).ItemId;
 
-        if (IsEventItem(itemId))
+        if (ItemUtil.IsEventItem(itemId))
             return;
 
         _itemId = itemId;

@@ -1,16 +1,8 @@
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using HaselCommon.Services;
-using HaselTweaks.Config;
-using HaselTweaks.Enums;
-using HaselTweaks.Interfaces;
-using Lumina.Excel.Sheets;
-using Lumina.Text;
-using Lumina.Text.ReadOnly;
 using GameFramework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace HaselTweaks.Tweaks;
@@ -158,7 +150,8 @@ public unsafe partial class DTR : IConfigurableTweak
         if (_dtrBusy == null)
             return;
 
-        _dtrBusy.Shown = _clientState.IsLoggedIn && _clientState.LocalPlayer?.OnlineStatus.RowId == 12;
+        var localPlayer = Control.GetLocalPlayer();
+        _dtrBusy.Shown = localPlayer != null && localPlayer->OnlineStatus == 12;
     }
 
     private void UpdateFPS()
