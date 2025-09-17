@@ -3,7 +3,7 @@ using HaselTweaks.Records.PortraitHelper;
 
 namespace HaselTweaks.Windows.PortraitHelperWindows.Dialogs;
 
-[RegisterScoped, AutoConstruct]
+[RegisterSingleton, AutoConstruct]
 public partial class RenameTagDialog : ConfirmationDialog
 {
     private readonly PluginConfig _pluginConfig;
@@ -41,11 +41,13 @@ public partial class RenameTagDialog : ConfirmationDialog
 
     public override void InnerDraw()
     {
-        ImGui.TextUnformatted(_textService.Translate("PortraitHelperWindows.RenameTagDialog.Name.Label", _tag!.Name));
+        ImGui.Text(_textService.Translate("PortraitHelperWindows.RenameTagDialog.Name.Label", _tag!.Name));
 
         ImGui.Spacing();
 
-        ImGui.InputText("##TagName", ref _name, 30);
+        var name = _name ?? string.Empty;
+        ImGui.InputText("##TagName", ref name, 30);
+        _name = name;
 
         var disabled = string.IsNullOrEmpty(_name.Trim()) && _name.Trim() != _tag!.Name.Trim();
 

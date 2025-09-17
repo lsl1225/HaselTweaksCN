@@ -20,14 +20,8 @@ public partial class AutoSorter
 {
     private AutoSorterConfiguration Config => _pluginConfig.Tweaks.AutoSorter;
 
-    public void OnConfigOpen() { }
-    public void OnConfigClose() { }
-    public void OnConfigChange(string fieldName) { }
-
-    public void DrawConfig()
+    public override void DrawConfig()
     {
-        using var _ = _configGui.PushContext(this);
-
         _configGui.DrawConfigurationHeader();
         _configGui.DrawBool("SortArmouryOnJobChange", ref Config.SortArmouryOnJobChange);
 
@@ -75,7 +69,7 @@ public partial class AutoSorter
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
-                ImGui.TextUnformatted(_textService.Translate(entry.Enabled
+                ImGui.Text(_textService.Translate(entry.Enabled
                     ? "AutoSorter.Config.EnableCheckmark.Tooltip.RuleIsEnabled"
                     : "AutoSorter.Config.EnableCheckmark.Tooltip.RuleIsDisabled"));
                 ImGui.EndTooltip();
@@ -298,7 +292,7 @@ public partial class AutoSorter
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
-                    ImGui.TextUnformatted(_textService.Translate("AutoSorter.SortingInProgress"));
+                    ImGui.Text(_textService.Translate("AutoSorter.SortingInProgress"));
                     ImGui.EndTooltip();
                 }
             }

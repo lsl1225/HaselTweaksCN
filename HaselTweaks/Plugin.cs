@@ -1,37 +1,30 @@
-using System.IO;
-
 namespace HaselTweaks;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    public Plugin(
-        IDalamudPluginInterface pluginInterface,
-        ISigScanner sigScanner,
-        IDataManager dataManager)
+    private readonly IHost _host;
+
+    public Plugin(IDalamudPluginInterface pluginInterface)
     {
-        FFXIVClientStructs.Interop.Generated.Addresses.Register();
-        Addresses.Register();
-        Resolver.GetInstance.Setup(
-            sigScanner.SearchBase,
-            dataManager.GameData.Repositories["ffxiv"].Version,
-            new FileInfo(Path.Join(pluginInterface.ConfigDirectory.FullName, "SigCache.json")));
-        Resolver.GetInstance.Resolve();
+        pluginInterface.InitializeCustomClientStructs();
 
-        Service.Collection
-            .AddDalamud(pluginInterface)
-            .AddSingleton(PluginConfig.Load)
-            .AddHaselCommon()
-            .AddHaselTweaks();
+        _host = new HostBuilder()
+            .UseContentRoot(pluginInterface.AssemblyLocation.Directory!.FullName)
+            .ConfigureServices(services =>
+            {
+                services.AddDalamud(pluginInterface);
+                services.AddSingleton(PluginConfig.Load);
+                services.AddHaselCommon();
+                services.AddHaselTweaks();
+            })
+            .Build();
 
-        Service.Initialize(() =>
-        {
-            Service.Get<TweakManager>();
-            Service.Get<CommandManager>();
-        });
+        _host.Start();
     }
 
     void IDisposable.Dispose()
     {
-        Service.Dispose();
+        _host.StopAsync().GetAwaiter().GetResult();
+        _host.Dispose();
     }
 }

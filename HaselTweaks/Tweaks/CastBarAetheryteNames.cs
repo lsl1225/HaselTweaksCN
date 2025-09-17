@@ -5,15 +5,16 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class CastBarAetheryteNames : ITweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class CastBarAetheryteNames : Tweak
 {
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly IClientState _clientState;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
-    private readonly SeStringEvaluator _seStringEvaluator;
+    private readonly ISeStringEvaluator _seStringEvaluator;
+    private readonly TeleportService _teleportService; // to update aetheryte list
 
     private Hook<HaselActionManager.Delegates.OpenCastBar>? _openCastBarHook;
     private Hook<Telepo.Delegates.Teleport>? _teleportHook;
@@ -21,9 +22,7 @@ public unsafe partial class CastBarAetheryteNames : ITweak
     private TeleportInfo? _teleportInfo;
     private bool _isCastingTeleport;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _openCastBarHook = _gameInteropProvider.HookFromAddress<HaselActionManager.Delegates.OpenCastBar>(
             HaselActionManager.MemberFunctionPointers.OpenCastBar,
@@ -32,38 +31,23 @@ public unsafe partial class CastBarAetheryteNames : ITweak
         _teleportHook = _gameInteropProvider.HookFromAddress<Telepo.Delegates.Teleport>(
             Telepo.MemberFunctionPointers.Teleport,
             TeleportDetour);
-    }
 
-    public void OnEnable()
-    {
-        _clientState.TerritoryChanged += OnTerritoryChanged;
+        _openCastBarHook.Enable();
+        _teleportHook.Enable();
 
         _addonLifecycle.RegisterListener(AddonEvent.PreRefresh, "_CastBar", OnCastBarPreRefresh);
-
-        _openCastBarHook?.Enable();
-        _teleportHook?.Enable();
+        _clientState.TerritoryChanged += OnTerritoryChanged;
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _clientState.TerritoryChanged -= OnTerritoryChanged;
-
         _addonLifecycle.UnregisterListener(AddonEvent.PreRefresh, "_CastBar", OnCastBarPreRefresh);
 
-        _openCastBarHook?.Disable();
-        _teleportHook?.Disable();
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
         _openCastBarHook?.Dispose();
+        _openCastBarHook = null;
         _teleportHook?.Dispose();
-
-        Status = TweakStatus.Disposed;
+        _teleportHook = null;
     }
 
     private void OnTerritoryChanged(ushort id)
@@ -96,8 +80,8 @@ public unsafe partial class CastBarAetheryteNames : ITweak
         var placeName = true switch
         {
             _ when info.IsApartment => _textService.GetAddonText(8518),
-            _ when info.IsSharedHouse => _seStringEvaluator.EvaluateFromAddon(8519, [(uint)info.Ward, (uint)info.Plot]).ExtractText(),
-            _ when row.PlaceName.IsValid => row.PlaceName.Value.Name.ExtractText(),
+            _ when info.IsSharedHouse => _seStringEvaluator.EvaluateFromAddon(8519, [(uint)info.Ward, (uint)info.Plot]).ToString(),
+            _ when row.PlaceName.IsValid => row.PlaceName.Value.Name.ToString(),
             _ => string.Empty
         };
 

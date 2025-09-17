@@ -1,4 +1,4 @@
-<img align="left" src="HaselTweaks/Assets/Icon.png" height="60px" alt="HaselTweaks"/>
+<img align="left" src="HaselTweaks/Assets/Icon.png" width="60px" height="60px" alt="HaselTweaks"/>
 
 **HaselTweaks** is an all-in-one plugin for all my tweaks and helpers.<br/>
 <br/>
@@ -27,6 +27,10 @@ Configuration options:
 
 Clicking on a zone in the Aether Currents window opens a helper window that shows where to find the aether currents or which quests unlocks them. Clicking on an aether current in the list flags the position of the aether current or the quest giver on the map.
 
+### Always Face Camera
+
+This tweak makes your character look at the camera when facing it, mimicking the behavior of the \"/facecamera\" command, with the position updated every frame. Does not work in combat or when you have a target.
+
 ### Auto Sorter
 
 Sorts items inside various containers when they are opened. Rules can be configured.
@@ -40,6 +44,10 @@ Configuration options:
 ### Auto-open Recipe
 
 If a new daily/tribal quest objective requires you to craft an item, and you have all the materials for it in your inventory at that moment, this tweak will automatically open the recipe, saving you a whopping 4-5 clicks.
+
+### Auto-select Soil and Seed
+
+Automatically selects the first available soil and seed from your inventory when opening the "Gardening" window.
 
 ### Background Music Keybind
 

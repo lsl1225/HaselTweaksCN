@@ -17,9 +17,7 @@ public partial class LockWindowPosition
 {
     private LockWindowPositionConfiguration Config => _pluginConfig.Tweaks.LockWindowPosition;
 
-    public void OnConfigOpen() { }
-
-    public void OnConfigClose()
+    public override void OnConfigClose()
     {
         _hoveredWindowName = "";
         _hoveredWindowPos = default;
@@ -27,22 +25,16 @@ public partial class LockWindowPosition
         _showPicker = false;
     }
 
-    public void OnConfigChange(string fieldName) { }
-
-    public void DrawConfig()
+    public override void DrawConfig()
     {
-        using var _ = _configGui.PushContext(this);
-
         _configGui.DrawConfigurationHeader();
 
-        ImGui.Checkbox(_textService.Translate("LockWindowPosition.Config.Inverted.Label"), ref Config.Inverted);
-        if (ImGui.IsItemClicked())
+        if (ImGui.Checkbox(_textService.Translate("LockWindowPosition.Config.Inverted.Label"), ref Config.Inverted))
         {
             _pluginConfig.Save();
         }
 
-        ImGui.Checkbox(_textService.Translate("LockWindowPosition.Config.AddLockUnlockContextMenuEntries.Label"), ref Config.AddLockUnlockContextMenuEntries);
-        if (ImGui.IsItemClicked())
+        if (ImGui.Checkbox(_textService.Translate("LockWindowPosition.Config.AddLockUnlockContextMenuEntries.Label"), ref Config.AddLockUnlockContextMenuEntries))
         {
             _pluginConfig.Save();
         }
@@ -52,7 +44,7 @@ public partial class LockWindowPosition
         ImGuiUtils.DrawPaddedSeparator();
         if (Config.LockedWindows.Count != 0)
         {
-            ImGui.TextUnformatted(_textService.Translate("LockWindowPosition.Config.Windows.Title"));
+            ImGui.Text(_textService.Translate("LockWindowPosition.Config.Windows.Title"));
 
             if (!ImGui.BeginTable("##Table", 3, ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.NoPadOuterX))
             {
@@ -72,7 +64,10 @@ public partial class LockWindowPosition
                 ImGui.TableNextRow();
 
                 ImGui.TableNextColumn();
-                ImGui.Checkbox(key + "_Enabled", ref entry.Enabled);
+                if (ImGui.Checkbox(key + "_Enabled", ref entry.Enabled))
+                {
+                    _pluginConfig.Save();
+                }
                 if (ImGui.IsItemHovered())
                 {
                     var isLocked = entry.Enabled;
@@ -81,18 +76,14 @@ public partial class LockWindowPosition
                         isLocked = !isLocked;
 
                     ImGui.BeginTooltip();
-                    ImGui.TextUnformatted(_textService.Translate(isLocked
+                    ImGui.Text(_textService.Translate(isLocked
                         ? "LockWindowPosition.Config.EnableCheckmark.Tooltip.Locked"
                         : "LockWindowPosition.Config.EnableCheckmark.Tooltip.Unlocked"));
                     ImGui.EndTooltip();
                 }
-                if (ImGui.IsItemClicked())
-                {
-                    _pluginConfig.Save();
-                }
 
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Name);
+                ImGui.Text(entry.Name);
 
                 ImGui.TableNextColumn();
                 if (isWindowFocused && (ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift)))
@@ -127,7 +118,7 @@ public partial class LockWindowPosition
         else
         {
             using (ImRaii.Disabled())
-                ImGui.TextUnformatted(_textService.Translate("LockWindowPosition.Config.NoWindowsAddedYet"));
+                ImGui.Text(_textService.Translate("LockWindowPosition.Config.NoWindowsAddedYet"));
             ImGuiUtils.PushCursorY(4);
         }
 

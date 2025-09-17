@@ -1,5 +1,140 @@
 # Changelog
 
+## [38.0.4] (2025-09-15)
+
+### Portrait Helper
+
+- **Fixed:** Incorrect use of ImGui caused the game to crash when reordering presets in the Preset Browser. Sorry about that!
+
+## [38.0.3] (2025-09-10)
+
+### Cast Bar Aetheryte Names
+
+- **Fixed:** The destination name now is now displayed when the teleport was initiated via the Map, without opening the Teleport window first.
+
+### Lock Window Position
+
+- **Fixed:** The settings didn't save correctly.
+
+## [38.0.2] (2025-09-03)
+
+### Enhanced Experience Bar
+
+- **Fixed:** Cosmic Research Bar was showing the class score on stage 9, when there are 14 stages now.
+
+## [38.0.1] (2025-09-03)
+
+### Always Face Camera
+
+- **Fixed:** When the tweak was disabled, it didn't unregister the event handler.
+
+## [38.0.0] (2025-09-03)
+
+### New Tweak: Always Face Camera
+
+This tweak makes your character look at the camera when facing it, mimicking the behavior of the \"/facecamera\" command, with the position updated every frame. Does not work in combat or when you have a target.
+
+## [37.1.0] (2025-09-02)
+
+Update for 7.31.
+
+### Commands
+
+- **Added:** New command `/reloadui`  
+  Reloads the games UI. This is helpful for applying texture changes without using the Aesthetician or relogging.
+
+## [37.0.4] (2025-08-30)
+
+### Enhanced Material List
+
+- **Fixed:** Code cleanup in 37.0.3 went too far and called an incorrect function, causing a crash when the Material List opens. Sorry about that!
+
+## [37.0.3] (2025-08-26)
+
+### Portrait Helper
+
+- **Fixed:** The button for the Advanced Edit mode was incorrectly tied to the preset in clipboard detection. Copy/paste mistake, sorry.
+
+## [37.0.2] (2025-08-17)
+
+### Portrait Helper
+
+Reworked a bunch of code regarding Menu Bar and its overlays and how it writes data to the clipboard. Hopefully everything works!
+
+- **Fixed:** The Portrait Browser, when popped out due to interface scaling, will no longer throw "Cannot access a disposed object." errors and become unusable.
+
+## [37.0.1] (2025-08-13)
+
+### Auto-select Soil and Seed
+
+- **Fixed:** Used the wrong variable to check if items were selected already.
+
+## [37.0.0] (2025-08-13)
+
+### New Tweak: Auto-select Soil and Seed
+
+Automatically selects the first available soil and seed from your inventory when opening the "Gardening" window.
+
+### Enhanced Material List
+
+- **Fixed:** The item and zone name had a display issue due to the games ellipsis flag not handling multiple lines.
+
+## [36.1.3] (2025-08-08)
+
+### Enhanced Experience Bar
+
+- **Updated:** The Cosmic Research Bar should now work for the new Dataset, whenever it's added.
+- **Fixed:** Due to a human error when updating the code, the experience bar didn't show anything.
+
+## [36.1.2] (2025-08-08)
+
+### Character Class Switcher
+
+- **Fixed:** Clicking on a crafter would always show the desynthesis window.
+
+### Portrait Helper
+
+- **Fixed:** Advanced Edit Overlay was temporarily disabled. It's back now.
+
+### Scrollable Tabs
+
+- **Fixed:** Scrolling in the Character window didn't work.
+
+## [36.1.1] (2025-08-08)
+
+### Cast Bar Aetheryte Name
+
+- **Fixed:** Function signature resolved to the wrong function.
+
+## [36.1.0] (2025-08-08)
+
+Preliminary update for Patch 7.3.  
+I didn't test it that much, because I was updating FFXIVClientStructs/Dalamud, but it seemed fine so far. Beware of crashes?!
+
+### Removed Tweak: Restore Golden City
+
+If you know, you know. If you didn't know, well... now you know.
+
+## [36.0.2] (2025-07-29)
+
+### Enhanced Target Info
+
+- **Updated:** Added some more safety checks to avoid crashes, just in case.
+
+## [36.0.1] (2025-07-17)
+
+### HaselTweaks
+
+- **Removed:** The window locking feature from the Aether Current Helper and Gear Set Grid title bars was removed. This functionality predated Dalamud's built-in window pinning, which should be used instead.
+
+### Gear Set Grid
+
+- **Fixed:** In some languages, the item category was incorrectly displaying soft hyphens.
+
+### Portrait Helper
+
+- **Fixed:** Copying images in the Preset Browser used an incorrect method for clipboard memory handling. While copying images worked fine, the previous implementation could've caused memory leaks. This update now uses the proper Windows API calls.
+
 ## [36.0.0] (2025-06-13)
 
 ### New Tweak: Enhanced Hunting Log
@@ -2076,6 +2211,23 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
 [unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev
+[38.0.4]: https://github.com/Haselnussbomber/HaselTweaks/compare/v38.0.3...v38.0.4
+[38.0.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v38.0.2...v38.0.3
+[38.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v38.0.1...v38.0.2
+[38.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v38.0.0...v38.0.1
+[38.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.1.0...v38.0.0
+[37.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.0.4...v37.1.0
+[37.0.4]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.0.3...v37.0.4
+[37.0.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.0.2...v37.0.3
+[37.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.0.1...v37.0.2
+[37.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v37.0.0...v37.0.1
+[37.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.1.3...v37.0.0
+[36.1.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.1.2...v36.1.3
+[36.1.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.1.1...v36.1.2
+[36.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.1.0...v36.1.1
+[36.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.0.2...v36.1.0
+[36.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.0.1...v36.0.2
+[36.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v36.0.0...v36.0.1
 [36.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.2...v36.0.0
 [35.1.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.1...v35.1.2
 [35.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v35.1.0...v35.1.1

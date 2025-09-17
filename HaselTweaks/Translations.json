@@ -236,6 +236,14 @@
     "zh": "打开风脉泉窗口"
   },
 
+  "AlwaysFaceCamera.Tweak.Name": {
+    "en": "Always Face Camera"
+  },
+  "AlwaysFaceCamera.Tweak.Description": {
+    "en": "This tweak makes your character look at the camera when facing it, mimicking the behavior of the \"/facecamera\" command, with the position updated every frame. Does not work in combat or when you have a target.",
+    "de": "Dieser Tweak lässt deinen Charakter zur Kamera schauen, wenn er ihr zugewandt ist, und ahmt dabei das Verhalten des Befehls \"/facecamera\" nach, wobei die Position mit jedem Frame aktualisiert wird. Funktioniert nicht im Kampf oder wenn du ein Ziel hast."
+  },
+
   "AutoOpenRecipe.Tweak.Name": {
     "en": "Auto-open Recipe",
     "zh": "自动打开制作笔记"
@@ -391,6 +399,14 @@
     "zh": "无"
   },
 
+  "AutoSelectSoilAndSeed.Tweak.Name": {
+    "en": "Auto-select Soil and Seed"
+  },
+  "AutoSelectSoilAndSeed.Tweak.Description": {
+    "en": "Automatically selects the first available soil and seed from your inventory when opening the \"Gardening\" window.",
+    "de": "Wählt beim Öffnen des \"AUSSÄEN\"-Fensters automatisch die erste verfügbare Erde und den ersten Samen aus deinem Inventar aus."
+  },
+
   "BiggerItemDyeingPreview.Tweak.Name": {
     "en": "Bigger Item Dyeing Preview",
     "zh": "更大的染色预览"
@@ -525,6 +541,13 @@
     "en": "This shortcut command executes the \"/gearset change\" command with the current gear set id and the given glamour plate id (1-20).",
     "de": "Dieser Abkürzungsbefehl führt den Befehl \"/gearset change\" mit der Nummer des aktuellen Ausrüstungssets und der angegebenen Projektionsplatten-Nummer (1-20) aus.",
     "zh": "该快捷指令使用当前的套装编号和给定的投影模板编号(1-20)执行“/套装 更换”命令。"
+  },
+  "Commands.Config.EnableReloadUICommand.Label": {
+    "en": "/reloadui"
+  },
+  "Commands.Config.EnableReloadUICommand.Description": {
+    "en": "Reloads the games UI. This is helpful for applying texture changes without using the Aesthetician or relogging.",
+    "de": "Läd das UI des Spiels neu. Dies ist hilfreich, um Texturänderungen anzuwenden, ohne den Kosmetiker rufen oder sich neu einloggen zu müssen."
   },
   "Commands.ItemLink.ItemNotFound": {
     "en": "Item {0} not found.",
@@ -1967,15 +1990,9 @@
     "de": "Vorlagen-Browser umschalten",
     "zh": "开关预设浏览器"
   },
-  "PortraitHelperWindows.MenuBar.ToggleAlignmentTool.Label.CloseSettings": {
-    "en": "Toggle Alignment Tool\nShift: Close Settings",
-    "de": "Ausrichtungswerkzeug umschalten\nShift: Einstellungen schließen",
-    "zh": "开关辅助线\nShift：关闭设置"
-  },
-  "PortraitHelperWindows.MenuBar.ToggleAlignmentTool.Label.OpenSettings": {
-    "en": "Toggle Alignment Tool\nShift: Open Settings",
-    "de": "Ausrichtungswerkzeug umschalten\nShift: Einstellungen öffnen",
-    "zh": "开关辅助线\nShift：打开设置"
+  "PortraitHelperWindows.MenuBar.ToggleAlignmentTool.Label": {
+    "en": "Toggle Alignment Tool\nShift: Open/close Settings",
+    "de": "Ausrichtungswerkzeug umschalten\nShift: Einstellungen öffnen/schließen"
   },
   "PortraitHelperWindows.PresetCard.MovingPresetCard.Tooltip": {
     "en": "Moving \"{0}\"",
@@ -2277,7 +2294,7 @@
   },
   "ShopItemIcons.Config.HandleShopExchangeCurrency.Description": {
     "en": "This applies to vendors who sell items for currency, such as all the societies vendors, or the trophy crystal quartermaster.",
-    "de": "Betrifft Händler, die Gegenstände für Währung verkaufen, wie zum Beispiel all die Händler der Freundesvölker, oder dem Kristalltrophäen\u00ADVersorgungsoffizier.",
+    "de": "Betrifft Händler, die Gegenstände für Währung verkaufen, wie zum Beispiel all die Händler der Freundesvölker, oder dem Kristalltrophäen-Versorgungsoffizier.",
     "zh": "这项适用于以货币交易的商人，例如所有友好部族商人或战利水晶交易员。"
   },
   "ShopItemIcons.Config.HandleGrandCompanyExchange.Label": {
@@ -2311,26 +2328,14 @@
     "zh": "简化都市传送网列表的行为：鼠标悬停选择以太之光与点击传送。"
   },
 
-  "ImGuiWindow.WindowLocked": {
-    "en": "Window locked",
-    "de": "Fenster gesperrt",
-    "fr": "Fenêtre verrouillée",
-    "ja": "ウィンドウがロックされました",
-    "zh": "窗口已锁定"
-  },
-
-  "ImGuiWindow.WindowUnlocked": {
-    "en": "Window unlocked",
-    "de": "Fenster entsperrt",
-    "fr": "Fenêtre déverrouillée",
-    "ja": "ウィンドウがロック解除されました",
-    "zh": "窗口已解锁"
-  },
-
   "ConfirmationButtonWindow.Save": {
     "en": "Save",
     "de": "Speichern",
     "zh": "保存"
+  },
+  "ConfirmationButtonWindow.Saving": {
+    "en": "Saving...",
+    "de": "Speichert..."
   },
   "ConfirmationButtonWindow.Cancel": {
     "en": "Cancel",

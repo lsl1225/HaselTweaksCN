@@ -9,8 +9,8 @@ using Lumina.Excel;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class EnhancedExpBar : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class EnhancedExpBar : ConfigurableTweak
 {
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
@@ -19,56 +19,40 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly ExcelService _excelService;
-    private readonly SeStringEvaluator _seStringEvaluator;
+    private readonly ISeStringEvaluator _seStringEvaluator;
 
     private Hook<AgentHUD.Delegates.UpdateExp>? _updateExpHook;
     private byte _colorMultiplyRed = 100;
     private byte _colorMultiplyGreen = 100;
     private byte _colorMultiplyBlue = 100;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _updateExpHook = _gameInteropProvider.HookFromAddress<AgentHUD.Delegates.UpdateExp>(
             AgentHUD.MemberFunctionPointers.UpdateExp,
             UpdateExpDetour);
-    }
+        _updateExpHook?.Enable();
 
-    public void OnEnable()
-    {
         _clientState.LeavePvP += OnLeavePvP;
         _clientState.TerritoryChanged += OnTerritoryChanged;
 
         _addonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "_Exp", OnAddonExpPostRequestedUpdate);
 
-        _updateExpHook?.Enable();
-
         TriggerReset();
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _clientState.LeavePvP -= OnLeavePvP;
         _clientState.TerritoryChanged -= OnTerritoryChanged;
 
         _addonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "_Exp", OnAddonExpPostRequestedUpdate);
 
-        _updateExpHook?.Disable();
+        _updateExpHook?.Dispose();
+        _updateExpHook = null;
 
         if (Status is TweakStatus.Enabled)
             TriggerReset();
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
-        _updateExpHook?.Dispose();
-
-        Status = TweakStatus.Disposed;
     }
 
     private void OnLeavePvP()
@@ -81,7 +65,7 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     {
         _updateExpHook!.Original(thisPtr, expNumberArray, expStringArray, characterStringArray);
 
-        if (PlayerState.Instance()->IsLoaded == 0 || !_excelService.TryGetRow<ClassJob>(PlayerState.Instance()->CurrentClassJobId, out var classJob))
+        if (!PlayerState.Instance()->IsLoaded || !_excelService.TryGetRow<ClassJob>(PlayerState.Instance()->CurrentClassJobId, out var classJob))
             return;
 
         SetColor(); // reset unless overwritten
@@ -115,7 +99,7 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
 
     private void OnAddonExpPostRequestedUpdate(AddonEvent type, AddonArgs args)
     {
-        var addon = (AtkUnitBase*)args.Addon;
+        var addon = (AtkUnitBase*)args.Addon.Address;
 
         var gaugeBarNode = addon->GetComponentByNodeId(6);
         if (gaugeBarNode == null)
@@ -160,7 +144,7 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
     private bool OverwriteWithPvPBar(ClassJob classJob)
     {
         var pvpProfile = PvPProfile.Instance();
-        if (pvpProfile == null || pvpProfile->IsLoaded != 0x01 || !_excelService.TryGetRow<PvPSeriesLevel>(pvpProfile->GetSeriesCurrentRank(), out var pvpSeriesLevel))
+        if (pvpProfile == null || !pvpProfile->IsLoaded || !_excelService.TryGetRow<PvPSeriesLevel>(pvpProfile->GetSeriesCurrentRank(), out var pvpSeriesLevel))
             return false;
 
         var claimedRank = pvpProfile->GetSeriesClaimedRank();
@@ -215,7 +199,11 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
             return false;
 
         var wksManager = WKSManager.Instance();
-        if (wksManager == null || wksManager->Research == null || !wksManager->Research->IsLoaded)
+        if (wksManager == null)
+            return false;
+
+        var researchModule = wksManager->ResearchModule;
+        if (researchModule == null || !researchModule->IsLoaded)
             return false;
 
         if (!(classJob.IsCrafter() || classJob.IsGatherer()))
@@ -223,10 +211,11 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
 
         var job = classJob.Abbreviation;
         var toolClassId = (byte)(classJob.RowId - 7);
-        var stage = wksManager->Research->CurrentStages[toolClassId - 1];
-        var nextStage = wksManager->Research->UnlockedStages[toolClassId - 1];
+        var stage = researchModule->CurrentStages[toolClassId - 1];
+        var nextStage = researchModule->UnlockedStages[toolClassId - 1];
+        var maxStage = _excelService.GetSheet<WKSCosmoToolPassiveBuff>().Max(row => row.Unknown0);
 
-        if (stage == 9)
+        if (stage == maxStage)
         {
             if (Config.ShowCosmicToolScore)
             {
@@ -264,25 +253,22 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
             return true;
         }
 
-        if (!_excelService.TryGetRow<RawRow>("WKSCosmoToolClass", toolClassId, out var toolClassRow))
-            return false;
-
-        if (!_excelService.TryGetRow<RawRow>("WKSCosmoToolDataAmount", toolClassRow.ReadUInt8(0x8E), out var dataAmountRow)) // Unknown40
+        if (!_excelService.TryGetRow<WKSCosmoToolClass>(toolClassId, out var toolClassRow))
             return false;
 
         byte selectedType = 0;
         var lowestPercentage = float.MaxValue;
 
-        for (byte type = 1; type <= 4; type++)
+        for (byte type = 1; type <= 5; type++)
         {
-            if (!wksManager->Research->IsTypeAvailable(toolClassId, type))
+            if (!researchModule->IsTypeAvailable(toolClassId, type))
                 break;
 
-            var neededXP = wksManager->Research->GetNeededAnalysis(toolClassId, type);
+            var neededXP = researchModule->GetNeededAnalysis(toolClassId, type);
             if (neededXP == 0)
                 continue;
 
-            var currentXP = wksManager->Research->GetCurrentAnalysis(toolClassId, type);
+            var currentXP = researchModule->GetCurrentAnalysis(toolClassId, type);
             if (currentXP >= neededXP)
                 continue;
 
@@ -296,9 +282,9 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
 
         if (selectedType == 0)
         {
-            for (byte type = 1; type <= 4; type++)
+            for (byte type = 1; type <= 5; type++)
             {
-                if (!wksManager->Research->IsTypeAvailable(toolClassId, type))
+                if (!researchModule->IsTypeAvailable(toolClassId, type))
                     break;
 
                 selectedType = type;
@@ -308,14 +294,12 @@ public unsafe partial class EnhancedExpBar : IConfigurableTweak
         if (selectedType == 0)
             return false;
 
-        var toolNameId = toolClassRow.ReadUInt16((nuint)(8 * (selectedType - 1) + 0x70));
-
-        if (!_excelService.TryGetRow<WKSCosmoToolName>(toolNameId, out var toolNameRow))
+        if (!_excelService.TryGetRow<WKSCosmoToolName>(toolClassRow.Types[selectedType - 1].Name.RowId, out var toolNameRow))
             return false;
 
-        var toolName = toolNameRow.Unknown0.ExtractText();
-        var finalCurrentXP = wksManager->Research->GetCurrentAnalysis(toolClassId, selectedType);
-        var finalNeededXP = wksManager->Research->GetNeededAnalysis(toolClassId, selectedType);
+        var toolName = toolNameRow.Name.ToString();
+        var finalCurrentXP = researchModule->GetCurrentAnalysis(toolClassId, selectedType);
+        var finalNeededXP = researchModule->GetNeededAnalysis(toolClassId, selectedType);
         var star = stage < nextStage ? '*' : ' ';
 
         SetText($"{job} {toolName}{star}   {finalCurrentXP}/{finalNeededXP}");

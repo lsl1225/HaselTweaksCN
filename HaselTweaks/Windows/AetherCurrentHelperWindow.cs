@@ -5,13 +5,13 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 namespace HaselTweaks.Windows;
 
 [RegisterSingleton, AutoConstruct]
-public unsafe partial class AetherCurrentHelperWindow : LockableWindow
+public unsafe partial class AetherCurrentHelperWindow : SimpleWindow
 {
     private static readonly Color TitleColor = new(216f / 255f, 187f / 255f, 125f / 255f);
     private static readonly string[] CompassHeadings = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"];
 
     private readonly IClientState _clientState;
-    private readonly TextureService _textureService;
+    private readonly ITextureProvider _textureProvider;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
     private readonly MapService _mapService;
@@ -39,13 +39,13 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
     }
 
     public override bool DrawConditions()
-        => CompFlgSet.HasValue && _clientState.IsLoggedIn && !RaptureAtkModule.Instance()->RaptureAtkUnitManager.UiFlags.HasFlag(UIModule.UiFlags.ActionBars);
+        => CompFlgSet.HasValue && _clientState.IsLoggedIn && !RaptureAtkUnitManager.Instance()->UiFlags.HasFlag(UIModule.UiFlags.ActionBars);
 
     public override unsafe void Draw()
     {
         DrawMainCommandButton();
 
-        var placeName = CompFlgSet!.Value.Territory.Value.PlaceName.Value.Name.ExtractText();
+        var placeName = CompFlgSet!.Value.Territory.Value.PlaceName.Value.Name.ToString();
 
         var textSize = ImGui.CalcTextSize(placeName);
         var availableSize = ImGui.GetContentRegionAvail();
@@ -56,12 +56,12 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.TextUnformatted(_textService.Translate("AetherCurrentHelperWindow.HideUnlockedTooltip"));
+            ImGui.Text(_textService.Translate("AetherCurrentHelperWindow.HideUnlockedTooltip"));
             ImGui.EndTooltip();
         }
 
         ImGui.SetCursorPos(startPos + new Vector2(availableSize.X / 2 - textSize.X / 2, style.ItemSpacing.Y));
-        ImGui.TextUnformatted(placeName);
+        ImGui.Text(placeName);
         ImGui.SetCursorPos(startPos + new Vector2(0, textSize.Y + style.ItemSpacing.Y * 4));
 
         using var cellPadding = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(4));
@@ -115,7 +115,7 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
             var text = _textService.Translate("AetherCurrentHelperWindow.AllAetherCurrentsAttuned");
             textSize = ImGui.CalcTextSize(text);
             ImGui.SetCursorPos(startPos + new Vector2(availableSize.X / 2 - textSize.X / 2, style.ItemSpacing.Y));
-            ImGui.TextUnformatted(text);
+            ImGui.Text(text);
             ImGui.TableNextColumn();
         }
 
@@ -135,12 +135,12 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
 
         ImGui.SetCursorPosX(windowSize.X + style.WindowPadding.X - iconSize - 1);
 
-        _textureService.DrawIcon(64, iconSize);
+        _textureProvider.DrawIcon(64, iconSize);
 
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.TextUnformatted(_textService.Translate("AetherCurrentHelperWindow.OpenAetherCurrentsWindowTooltip"));
+            ImGui.Text(_textService.Translate("AetherCurrentHelperWindow.OpenAetherCurrentsWindowTooltip"));
             ImGui.EndTooltip();
         }
 
@@ -187,12 +187,12 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
 
         // Icon
         ImGui.TableNextColumn();
-        _textureService.DrawIcon(quest.EventIconType.Value!.MapIconAvailable + 1, 40);
+        _textureProvider.DrawIcon(quest.EventIconType.Value!.MapIconAvailable + 1, 40);
 
         // Content
         ImGui.TableNextColumn();
-        ImGuiUtils.TextUnformattedColored(TitleColor, $"[#{index}] {_textService.GetQuestName(quest.RowId)}");
-        ImGui.TextUnformatted($"{_mapService.GetHumanReadableCoords(quest.IssuerLocation.Value)} | {_textService.GetENpcResidentName(quest.IssuerStart.RowId)}");
+        ImGui.TextColored(TitleColor, $"[#{index}] {_textService.GetQuestName(quest.RowId)}");
+        ImGui.Text($"{_mapService.GetHumanReadableCoords(quest.IssuerLocation.Value)} | {_textService.GetENpcResidentName(quest.IssuerStart.RowId)}");
 
         // Actions
         ImGui.TableNextColumn();
@@ -229,12 +229,12 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
 
         // Icon
         ImGui.TableNextColumn();
-        _textureService.DrawIcon(60033, 40);
+        _textureProvider.DrawIcon(60033, 40);
 
         // Content
         ImGui.TableNextColumn();
-        ImGuiUtils.TextUnformattedColored(TitleColor, $"[#{index}] {_textService.GetEObjName(eobj.RowId)}");
-        ImGui.TextUnformatted(_mapService.GetHumanReadableCoords(level));
+        ImGui.TextColored(TitleColor, $"[#{index}] {_textService.GetEObjName(eobj.RowId)}");
+        ImGui.Text(_mapService.GetHumanReadableCoords(level));
 
         // Actions
         ImGui.TableNextColumn();
@@ -277,11 +277,11 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
 
                     if (isUnlocked)
                     {
-                        ImGuiUtils.TextUnformattedColored(Color.Green, text);
+                        ImGui.TextColored(Color.Green, text);
                     }
                     else
                     {
-                        ImGui.TextUnformatted(text);
+                        ImGui.Text(text);
                     }
                 }
             }
@@ -293,7 +293,7 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
             {
                 ImGuiUtils.PushCursorX(2);
                 using var iconFont = ImRaii.PushFont(UiBuilder.IconFont);
-                ImGuiUtils.TextUnformattedColored(Color.Grey4, FontAwesomeIcon.Times.ToIconString());
+                ImGui.TextColored(Color.Grey4, FontAwesomeIcon.Times.ToIconString());
             }
         }
     }
@@ -308,6 +308,6 @@ public unsafe partial class AetherCurrentHelperWindow : LockableWindow
             ImGuiUtils.PushCursorX(ImGui.GetContentRegionAvail().X / 2 - ImGui.CalcTextSize(icon).X / 2);
         }
 
-        ImGuiUtils.TextUnformattedColored(Color.Green, icon);
+        ImGui.TextColored(Color.Green, icon);
     }
 }

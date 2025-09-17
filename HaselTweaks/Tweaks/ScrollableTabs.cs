@@ -5,8 +5,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class ScrollableTabs : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class ScrollableTabs : ConfigurableTweak
 {
     private const int NumArmouryBoardTabs = 12;
     private const int NumInventoryTabs = 5;
@@ -18,14 +18,11 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
 
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
-    private readonly ILogger<ScrollableTabs> _logger;
     private readonly IFramework _framework;
     private readonly IClientState _clientState;
     private readonly IGameConfig _gameConfig;
 
     private int _wheelState;
-
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
 
     private AtkCollisionNode* IntersectingCollisionNode
         => RaptureAtkModule.Instance()->AtkCollisionManager.IntersectingCollisionNode;
@@ -36,26 +33,14 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
     private bool IsPrev
         => _wheelState == (!Config.Invert ? -1 : 1);
 
-    public void OnInitialize() { }
-
-    public void OnEnable()
+    public override void OnEnable()
     {
         _framework.Update += OnFrameworkUpdate;
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _framework.Update -= OnFrameworkUpdate;
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
-
-        Status = TweakStatus.Disposed;
     }
 
     private void OnFrameworkUpdate(IFramework framework)
@@ -301,7 +286,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
         {
             var addonCharacter = name == "Character" ? (AddonCharacter*)unitBase : GetAddon<AddonCharacter>("Character");
 
-            if (addonCharacter == null || !addonCharacter->AddonControl.IsChildSetupComplete || IntersectingCollisionNode == addonCharacter->CharacterPreviewCollisionNode)
+            if (addonCharacter == null || !addonCharacter->AddonControl.IsChildSetupComplete || IntersectingCollisionNode == addonCharacter->PreviewController.CollisionNode)
             {
                 _wheelState = 0;
                 return;
@@ -322,7 +307,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
                     UpdateCharacter(addonCharacter);
                     break;
                 case "CharacterRepute" when Config.HandleCharacterRepute:
-                    UpdateCharacterRepute(addonCharacter, (HaselAddonCharacterRepute*)unitBase);
+                    UpdateCharacterRepute(addonCharacter, (AddonCharacterRepute*)unitBase);
                     break;
             }
         }
@@ -730,7 +715,7 @@ public unsafe partial class ScrollableTabs : IConfigurableTweak
         addon->SetTab(tabIndex);
     }
 
-    private void UpdateCharacterRepute(AddonCharacter* addonCharacter, HaselAddonCharacterRepute* addon)
+    private void UpdateCharacterRepute(AddonCharacter* addonCharacter, AddonCharacterRepute* addon)
     {
         if (addon->ExpansionsDropDownList == null || addon->ExpansionsDropDownList->IsOpen)
             return;

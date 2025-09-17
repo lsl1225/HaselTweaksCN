@@ -5,8 +5,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class CharacterClassSwitcher : ConfigurableTweak
 {
     private const int NumClasses = 33; // includes blue mage, crafters and gatherers
     private const int NumPvPClasses = 21;
@@ -14,7 +14,6 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
     private readonly TextService _textService;
-    private readonly ILogger<CharacterClassSwitcher> _logger;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IAddonLifecycle _addonLifecycle;
 
@@ -26,12 +25,8 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
     private Hook<AddonPvPCharacter.Delegates.ReceiveEvent>? _addonPvPCharacterReceiveEventHook;
     private Hook<AgentStatus.Delegates.Show>? _agentStatusShowHook;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
-        _gameInteropProvider.InitializeFromAttributes(this);
-
         _atkTooltipManagerShowTooltipHook = _gameInteropProvider.HookFromAddress<AtkTooltipManager.Delegates.ShowTooltip>(
             AtkTooltipManager.Addresses.ShowTooltip.Value,
             AtkTooltipManagerShowTooltipDetour);
@@ -59,49 +54,42 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         _agentStatusShowHook = _gameInteropProvider.HookFromAddress<AgentStatus.Delegates.Show>(
             AgentStatus.Instance()->VirtualTable->Show,
             AgentStatusShowDetour);
-    }
 
-    public void OnEnable()
-    {
-        _atkTooltipManagerShowTooltipHook?.Enable();
-        _addonCharacterClassOnSetupHook?.Enable();
-        _addonCharacterClassOnRequestedUpdateHook?.Enable();
-        _addonCharacterClassReceiveEventHook?.Enable();
-        _addonPvPCharacterUpdateClassesHook?.Enable();
-        _addonPvPCharacterReceiveEventHook?.Enable();
-        _agentStatusShowHook?.Enable();
+        _atkTooltipManagerShowTooltipHook.Enable();
+        _addonCharacterClassOnSetupHook.Enable();
+        _addonCharacterClassOnRequestedUpdateHook.Enable();
+        _addonCharacterClassReceiveEventHook.Enable();
+        _addonPvPCharacterUpdateClassesHook.Enable();
+        _addonPvPCharacterReceiveEventHook.Enable();
+        _agentStatusShowHook.Enable();
 
         _addonLifecycle.RegisterListener(AddonEvent.PostSetup, "PvPCharacter", PvPCharacterOnSetup);
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
-        _atkTooltipManagerShowTooltipHook?.Disable();
-        _addonCharacterClassOnSetupHook?.Disable();
-        _addonCharacterClassOnRequestedUpdateHook?.Disable();
-        _addonCharacterClassReceiveEventHook?.Disable();
-        _addonPvPCharacterUpdateClassesHook?.Disable();
-        _addonPvPCharacterReceiveEventHook?.Disable();
-        _agentStatusShowHook?.Disable();
-
         _addonLifecycle.UnregisterListener(AddonEvent.PostSetup, "PvPCharacter", PvPCharacterOnSetup);
-    }
 
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
         _atkTooltipManagerShowTooltipHook?.Dispose();
-        _addonCharacterClassOnSetupHook?.Dispose();
-        _addonCharacterClassOnRequestedUpdateHook?.Dispose();
-        _addonCharacterClassReceiveEventHook?.Dispose();
-        _addonPvPCharacterUpdateClassesHook?.Dispose();
-        _addonPvPCharacterReceiveEventHook?.Dispose();
-        _agentStatusShowHook?.Dispose();
+        _atkTooltipManagerShowTooltipHook = null;
 
-        Status = TweakStatus.Disposed;
+        _addonCharacterClassOnSetupHook?.Dispose();
+        _addonCharacterClassOnSetupHook = null;
+
+        _addonCharacterClassOnRequestedUpdateHook?.Dispose();
+        _addonCharacterClassOnRequestedUpdateHook = null;
+
+        _addonCharacterClassReceiveEventHook?.Dispose();
+        _addonCharacterClassReceiveEventHook = null;
+
+        _addonPvPCharacterUpdateClassesHook?.Dispose();
+        _addonPvPCharacterUpdateClassesHook = null;
+
+        _addonPvPCharacterReceiveEventHook?.Dispose();
+        _addonPvPCharacterReceiveEventHook = null;
+
+        _agentStatusShowHook?.Dispose();
+        _agentStatusShowHook = null;
     }
 
     private static bool IsCrafter(int id)
@@ -120,7 +108,7 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         bool unk8)
     {
         if (Config.DisableTooltips && (
-            (TryGetAddon<AtkUnitBase>("CharacterClass", out var unitBase) && unitBase->Id == parentId) ||
+            (TryGetAddon("CharacterClass", out AtkUnitBase* unitBase) && unitBase->Id == parentId) ||
             (TryGetAddon("PvPCharacter", out unitBase) && unitBase->Id == parentId)))
         {
             return;
@@ -136,13 +124,16 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         for (var i = 0; i < NumClasses; i++)
         {
             // skip crafters as they already have ButtonClick events
-            if (IsCrafter(i)) continue;
+            if (IsCrafter(i))
+                continue;
 
-            var node = addon->ButtonNodes.GetPointer(i)->Value;
-            if (node == null) continue;
+            var node = addon->ClassComponents.GetPointer(i)->Value;
+            if (node == null)
+                continue;
 
             var collisionNode = node->UldManager.RootNode;
-            if (collisionNode == null) continue;
+            if (collisionNode == null)
+                continue;
 
             collisionNode->AddEvent(AtkEventType.MouseClick, (uint)i + 2, (AtkEventListener*)addon, null, false);
             collisionNode->AddEvent(AtkEventType.InputReceived, (uint)i + 2, (AtkEventListener*)addon, null, false);
@@ -165,23 +156,28 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
 
         for (var i = 0; i < NumClasses; i++)
         {
-            var node = addon->ButtonNodes.GetPointer(i)->Value;
-            if (node == null)
+            var component = addon->ClassComponents.GetPointer(i)->Value;
+            if (component == null)
                 continue;
 
             // skip crafters as they already have Cursor Pointer flags
             if (IsCrafter(i))
             {
                 // but ensure the button is enabled, even though the player might not have desynthesis unlocked
-                node->SetEnabledState(true);
+                component->SetEnabledState(true);
                 continue;
             }
 
-            var rootNode = node->UldManager.RootNode;
+            var rootNode = component->UldManager.RootNode;
             if (rootNode == null)
                 continue;
 
-            var imageNode = node->GetImageNodeById(4);
+            var imageNode = component->GetComponentType() switch
+            {
+                ComponentType.Button => component->GetImageNodeById(6),
+                ComponentType.Base => component->GetImageNodeById(4),
+                _ => null
+            };
             if (imageNode == null)
                 continue;
 
@@ -208,11 +204,16 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         if (eventParam < 2)
             return false;
 
-        var node = addon->ButtonNodes.GetPointer(eventParam - 2)->Value;
-        if (node == null || node->OwnerNode == null)
+        var component = addon->ClassComponents.GetPointer(eventParam - 2)->Value;
+        if (component == null || component->OwnerNode == null)
             return false;
 
-        var imageNode = (AtkImageNode*)node->GetImageNodeById(4);
+        var imageNode = component->GetComponentType() switch
+        {
+            ComponentType.Button => component->GetImageNodeById(6),
+            ComponentType.Base => component->GetImageNodeById(4),
+            _ => null
+        };
         if (imageNode == null)
             return false;
 
@@ -235,20 +236,22 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
             }
         }
 
-        return ProcessEvents(node->OwnerNode, imageNode, eventType, atkEventData);
+        return ProcessEvents(component->OwnerNode, imageNode, eventType, atkEventData);
     }
 
     private void PvPCharacterOnSetup(AddonEvent type, AddonArgs args)
     {
-        var addon = (AddonPvPCharacter*)args.Addon;
+        var addon = (AddonPvPCharacter*)args.Addon.Address;
 
         for (var i = 0; i < NumPvPClasses; i++)
         {
             var entry = addon->ClassEntries.GetPointer(i);
-            if (entry->Base == null) continue;
+            if (entry->Base == null)
+                continue;
 
             var rootNode = entry->Base->UldManager.RootNode;
-            if (rootNode == null) continue;
+            if (rootNode == null)
+                continue;
 
             rootNode->AddEvent(AtkEventType.MouseClick, (uint)i | 0x10000, (AtkEventListener*)addon, null, false);
             rootNode->AddEvent(AtkEventType.InputReceived, (uint)i | 0x10000, (AtkEventListener*)addon, null, false);
@@ -262,10 +265,12 @@ public unsafe partial class CharacterClassSwitcher : IConfigurableTweak
         for (var i = 0; i < NumPvPClasses; i++)
         {
             var entry = addon->ClassEntries.GetPointer(i);
-            if (entry->Base == null || entry->Icon == null) continue;
+            if (entry->Base == null || entry->Icon == null)
+                continue;
 
             var rootNode = entry->Base->UldManager.RootNode;
-            if (rootNode == null) continue;
+            if (rootNode == null)
+                continue;
 
             // if job is unlocked, it has full alpha
             var isUnlocked = entry->Icon->Color.A == 255;

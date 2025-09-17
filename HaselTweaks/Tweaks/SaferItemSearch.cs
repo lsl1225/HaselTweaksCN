@@ -3,19 +3,15 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class SaferItemSearch : ITweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class SaferItemSearch : Tweak
 {
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly MarketBoardService _marketBoardService;
 
     private bool _isSearching;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize() { }
-
-    public void OnEnable()
+    public override void OnEnable()
     {
         _addonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, "ItemSearch", ItemSearch_PostRequestedUpdate);
         _addonLifecycle.RegisterListener(AddonEvent.PostSetup, "RetainerSell", RetainerSell_PostSetup);
@@ -24,7 +20,7 @@ public unsafe partial class SaferItemSearch : ITweak
         _marketBoardService.ListingsEnd += OnListingsEnd;
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _addonLifecycle.UnregisterListener(AddonEvent.PostRequestedUpdate, "ItemSearch", ItemSearch_PostRequestedUpdate);
         _addonLifecycle.UnregisterListener(AddonEvent.PostSetup, "RetainerSell", RetainerSell_PostSetup);
@@ -33,19 +29,9 @@ public unsafe partial class SaferItemSearch : ITweak
         _marketBoardService.ListingsEnd -= OnListingsEnd;
     }
 
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
-
-        Status = TweakStatus.Disposed;
-    }
-
     private void ItemSearch_PostRequestedUpdate(AddonEvent type, AddonArgs args)
     {
-        var addon = (AddonItemSearch*)args.Addon;
+        var addon = (AddonItemSearch*)args.Addon.Address;
         if (addon == null)
             return;
 
@@ -57,7 +43,7 @@ public unsafe partial class SaferItemSearch : ITweak
 
     private void RetainerSell_PostSetup(AddonEvent type, AddonArgs args)
     {
-        UpdateRetainerSellButton((AddonRetainerSell*)args.Addon);
+        UpdateRetainerSellButton((AddonRetainerSell*)args.Addon.Address);
     }
 
     private void UpdateRetainerSellButton(AddonRetainerSell* addon = null)

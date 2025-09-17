@@ -10,7 +10,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 {
     private static readonly Vector2 IconSize = new(34);
 
-    private readonly TextureService _textureService;
+    private readonly ITextureProvider _textureProvider;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
     private readonly ImGuiContextMenuService _imGuiContextMenuService;
@@ -41,14 +41,14 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 
     public override void Draw()
     {
-        ImGuiHelpers.SafeTextWrapped(_textService.Translate("GlamourDresserArmoireAlertWindow.Info"));
+        ImGui.TextWrapped(_textService.Translate("GlamourDresserArmoireAlertWindow.Info"));
 
         foreach (var (categoryId, categoryItems) in _tweak.Categories.OrderBy(kv => kv.Key))
         {
             if (!_excelService.TryGetRow<ItemUICategory>(categoryId, out var category))
                 continue;
 
-            ImGui.TextUnformatted(category.Name.ToDalamudString().ToString());
+            ImGui.Text(category.Name.ToDalamudString().ToString());
             ImGuiUtils.PushCursorY(3 * ImGuiHelpers.GlobalScale);
 
             using var indent = ImRaii.PushIndent();
@@ -74,7 +74,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 
         using (var group = ImRaii.Group())
         {
-            _textureService.DrawIcon(new GameIconLookup(item.Icon, isHq), IconSize * ImGuiHelpers.GlobalScale);
+            _textureProvider.DrawIcon(new GameIconLookup(item.Icon, isHq), IconSize * ImGuiHelpers.GlobalScale);
 
             ImGui.SameLine();
 
@@ -94,7 +94,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
                 ImGui.GetStyle().ItemInnerSpacing.X,
                 IconSize.Y * ImGuiHelpers.GlobalScale / 2f - ImGui.GetTextLineHeight() / 2f - 1));
 
-            ImGui.TextUnformatted(_textService.GetItemName(item.RowId).ExtractText().StripSoftHyphen());
+            ImGui.Text(_textService.GetItemName(item.RowId).ToString());
         }
 
         _imGuiContextMenuService.Draw("ItemContextMenu", builder =>

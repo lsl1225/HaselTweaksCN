@@ -58,24 +58,20 @@ public partial class CustomChatMessageFormats
     private List<(LogKind LogKind, LogFilter LogFilter, ReadOnlySeString Format)>? _cachedLogKindRows = null;
     private TextColorEntry[]? _cachedTextColor = null;
 
-    public void OnConfigOpen()
+    public override void OnConfigOpen()
     {
         _isConfigWindowOpen = true;
     }
 
-    public void OnConfigClose()
+    public override void OnConfigClose()
     {
         _isConfigWindowOpen = false;
         _cachedLogKindRows = null;
         _cachedTextColor = null;
     }
 
-    public void OnConfigChange(string fieldName) { }
-
-    public void DrawConfig()
+    public override void DrawConfig()
     {
-        using var _ = _configGui.PushContext(this);
-
         _configGui.DrawConfigurationHeader();
 
         _cachedLogKindRows ??= GenerateLogKindCache();
@@ -112,7 +108,7 @@ public partial class CustomChatMessageFormats
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
-                    ImGui.TextUnformatted(_textService.Translate(entry.Enabled
+                    ImGui.Text(_textService.Translate(entry.Enabled
                         ? "CustomChatMessageFormats.Config.Entry.EnableCheckbox.Tooltip.IsEnabled"
                         : "CustomChatMessageFormats.Config.Entry.EnableCheckbox.Tooltip.IsDisabled"));
                     ImGui.EndTooltip();
@@ -133,14 +129,14 @@ public partial class CustomChatMessageFormats
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.TextUnformatted(_textService.Translate("CustomChatMessageFormats.Config.Entry.InvalidPayloads.Tooltip"));
+                        ImGui.Text(_textService.Translate("CustomChatMessageFormats.Config.Entry.InvalidPayloads.Tooltip"));
                         ImGui.EndTooltip();
                     }
 
                     ImGuiUtils.SameLineSpace();
                 }
 
-                ImGui.TextUnformatted(GetLogKindlabel(logKindId));
+                ImGui.Text(GetLogKindlabel(logKindId));
 
                 DrawExample(entry.Format);
 
@@ -295,11 +291,11 @@ public partial class CustomChatMessageFormats
                 ImGuiUtils.PushCursorY(2f * ImGuiHelpers.GlobalScale);
 
                 if (payload.Type == ReadOnlySePayloadType.Text)
-                    ImGui.TextUnformatted("Text");
+                    ImGui.Text("Text");
                 else if (payload.Type == ReadOnlySePayloadType.Macro)
-                    ImGui.TextUnformatted(payload.MacroCode.ToString());
+                    ImGui.Text(payload.MacroCode.ToString());
                 else if (payload.Type == ReadOnlySePayloadType.Invalid)
-                    ImGui.TextUnformatted("Invalid");
+                    ImGui.Text("Invalid");
             }
 
             // Value
@@ -336,7 +332,7 @@ public partial class CustomChatMessageFormats
                             if (!payload.TryGetExpression(out var iconExpr) || !iconExpr.TryGetUInt(out var iconId))
                                 break;
 
-                            _textureService.DrawGfd(iconId, 20);
+                            _gfdService.Draw(iconId, 20);
 
                             ImGui.SameLine();
 
@@ -352,7 +348,7 @@ public partial class CustomChatMessageFormats
                                     var maxLineWidth = 20 * 20;
                                     var posStart = ImGui.GetCursorPosX();
 
-                                    foreach (var selectorGfdEntry in _textureService.GfdFileView.Value.Entries)
+                                    foreach (var selectorGfdEntry in _gfdService.Entries)
                                     {
                                         if (selectorGfdEntry.IsEmpty || selectorGfdEntry.Id is 69 or 123)
                                             continue;
@@ -362,7 +358,7 @@ public partial class CustomChatMessageFormats
                                         using var buttonActiveColor = ImRaii.PushColor(ImGuiCol.ButtonActive, 0xAAFFFFFF);
                                         using var buttonHoveredColor = ImRaii.PushColor(ImGuiCol.ButtonHovered, 0x77FFFFFF);
                                         using var buttonRounding = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0);
-                                        var size = ImGuiHelpers.ScaledVector2(selectorGfdEntry.Width, selectorGfdEntry.Height) * 2;
+                                        var size = selectorGfdEntry.Size * 2f;
                                         if (ImGui.Button($"##Icon{selectorGfdEntry.Id}", size))
                                         {
                                             var sb = new SeStringBuilder();
@@ -380,7 +376,7 @@ public partial class CustomChatMessageFormats
                                         }
 
                                         ImGui.SetCursorPos(startPos);
-                                        _textureService.DrawGfd(selectorGfdEntry.Id, size);
+                                        _gfdService.Draw(selectorGfdEntry.Id, size);
 
                                         ImGui.SameLine();
 
@@ -401,17 +397,17 @@ public partial class CustomChatMessageFormats
                                 {
                                     if (uintVal == 1)
                                     {
-                                        ImGui.TextUnformatted(_textService.Translate("CustomChatMessageFormats.Config.LStr1.Label")); // "Player Name"
+                                        ImGui.Text(_textService.Translate("CustomChatMessageFormats.Config.LStr1.Label")); // "Player Name"
                                         break;
                                     }
                                     if (uintVal == 2)
                                     {
-                                        ImGui.TextUnformatted(_textService.Translate("CustomChatMessageFormats.Config.LStr2.Label")); // "Message"
+                                        ImGui.Text(_textService.Translate("CustomChatMessageFormats.Config.LStr2.Label")); // "Message"
                                         break;
                                     }
                                 }
 
-                                ImGui.TextUnformatted(payload.ToString());
+                                ImGui.Text(payload.ToString());
                                 break;
                             }
 
@@ -429,9 +425,9 @@ public partial class CustomChatMessageFormats
                                     {
                                         var textColorEntry = _cachedTextColor?.FirstOrDefault(entry => entry.GNumIndex == parameterIndex);
                                         if (textColorEntry != null)
-                                            ImGui.TextUnformatted(textColorEntry.Label);
+                                            ImGui.Text(textColorEntry.Label);
                                         else
-                                            ImGui.TextUnformatted((parameterIndex - 1).ToString());
+                                            ImGui.Text((parameterIndex - 1).ToString());
                                     }
                                     break;
                                 }
@@ -459,19 +455,19 @@ public partial class CustomChatMessageFormats
                                     break;
                                 }
 
-                                ImGui.TextUnformatted(payload.ToString());
+                                ImGui.Text(payload.ToString());
                                 break;
                             }
 
                         default:
-                            ImGui.TextUnformatted(payload.ToString());
+                            ImGui.Text(payload.ToString());
                             break;
                     }
 
                 }
                 else if (payload.Type == ReadOnlySePayloadType.Invalid)
                 {
-                    ImGui.TextUnformatted("Invalid");
+                    ImGui.Text("Invalid");
                 }
 
                 if (ImGui.IsItemHovered())
@@ -484,7 +480,7 @@ public partial class CustomChatMessageFormats
                     if (isStringPlaceholder)
                     {
                         ImGui.BeginTooltip();
-                        ImGui.TextUnformatted(_textService.Translate("CustomChatMessageFormats.Config.Entry.Payload.StringPlaceholder.Tooltip"));
+                        ImGui.Text(_textService.Translate("CustomChatMessageFormats.Config.Entry.Payload.StringPlaceholder.Tooltip"));
                         ImGui.EndTooltip();
                     }
 
@@ -497,7 +493,7 @@ public partial class CustomChatMessageFormats
                     if (isStackColor)
                     {
                         ImGui.BeginTooltip();
-                        ImGui.TextUnformatted(_textService.Translate("CustomChatMessageFormats.Config.Entry.Payload.StackColor.Tooltip"));
+                        ImGui.Text(_textService.Translate("CustomChatMessageFormats.Config.Entry.Payload.StackColor.Tooltip"));
                         ImGui.EndTooltip();
                     }
                 }
@@ -722,7 +718,7 @@ public partial class CustomChatMessageFormats
         {
             if (payload.Type == ReadOnlySePayloadType.Text)
             {
-                ImGui.TextUnformatted(Encoding.UTF8.GetString(payload.Body.ToArray()));
+                ImGui.Text(Encoding.UTF8.GetString(payload.Body.ToArray()));
                 ImGui.SameLine(0, 0);
                 continue;
             }
@@ -734,7 +730,7 @@ public partial class CustomChatMessageFormats
             {
                 case MacroCode.Icon:
                     if (payload.TryGetExpression(out var iconExpr) && iconExpr.TryGetUInt(out var iconId))
-                        _textureService.DrawGfd(iconId, 20);
+                        _gfdService.Draw(iconId, 20);
                     break;
 
                 case MacroCode.Color:
@@ -815,7 +811,7 @@ public partial class CustomChatMessageFormats
         foreach (var row in _cachedLogKindRows)
         {
             if (row.LogKind.RowId == logKindId)
-                return row.LogFilter.Name.ExtractText();
+                return row.LogFilter.Name.ToString();
         }
 
         return $"LogKind #{logKindId}";

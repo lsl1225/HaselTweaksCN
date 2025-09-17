@@ -12,17 +12,16 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class EnhancedLoginLogout : ConfigurableTweak
 {
     private readonly PluginConfig _pluginConfig;
     private readonly TextService _textService;
-    private readonly ILogger<EnhancedLoginLogout> _logger;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IGameConfig _gameConfig;
     private readonly IClientState _clientState;
     private readonly IAddonLifecycle _addonLifecycle;
-    private readonly TextureService _textureService;
+    private readonly ITextureProvider _textureProvider;
     private readonly ExcelService _excelService;
     private readonly ConfigGui _configGui;
 
@@ -36,11 +35,9 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
     private BattleChara* _pet = null;
     private ushort _petIndex = 0xFFFF;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
     #region Core
 
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _updateCharaSelectDisplayHook = _gameInteropProvider.HookFromAddress<AgentLobby.Delegates.UpdateCharaSelectDisplay>(
             AgentLobby.MemberFunctionPointers.UpdateCharaSelectDisplay,
@@ -57,10 +54,11 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
         _openLoginWaitDialogHook = _gameInteropProvider.HookFromAddress<AgentLobby.Delegates.OpenLoginWaitDialog>(
             AgentLobby.MemberFunctionPointers.OpenLoginWaitDialog,
             OpenLoginWaitDialogDetour);
-    }
 
-    public void OnEnable()
-    {
+        _updateCharaSelectDisplayHook.Enable();
+        _cleanupCharactersHook.Enable();
+        _executeEmoteHook.Enable();
+
         _gameConfig.Changed += OnGameConfigChanged;
         _clientState.Login += OnLogin;
         _clientState.Logout += OnLogout;
@@ -70,15 +68,11 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
 
         _addonLifecycle.RegisterListener(AddonEvent.PostSetup, "Logo", OnLogoPostSetup);
 
-        _updateCharaSelectDisplayHook?.Enable();
-        _cleanupCharactersHook?.Enable();
-        _executeEmoteHook?.Enable();
-
         if (Config.PreloadTerritory)
             _openLoginWaitDialogHook?.Enable();
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _gameConfig.Changed -= OnGameConfigChanged;
         _clientState.Login -= OnLogin;
@@ -88,24 +82,17 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
 
         CleanupCharaSelect();
 
-        _updateCharaSelectDisplayHook?.Disable();
-        _cleanupCharactersHook?.Disable();
-        _executeEmoteHook?.Disable();
-        _openLoginWaitDialogHook?.Disable();
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
         _updateCharaSelectDisplayHook?.Dispose();
-        _cleanupCharactersHook?.Dispose();
-        _executeEmoteHook?.Dispose();
-        _openLoginWaitDialogHook?.Dispose();
+        _updateCharaSelectDisplayHook = null;
 
-        Status = TweakStatus.Disposed;
+        _cleanupCharactersHook?.Dispose();
+        _cleanupCharactersHook = null;
+
+        _executeEmoteHook?.Dispose();
+        _executeEmoteHook = null;
+
+        _openLoginWaitDialogHook?.Dispose();
+        _openLoginWaitDialogHook = null;
     }
 
     private void OnLogin()
@@ -194,7 +181,7 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
     {
         if (Config.SkipLogo)
         {
-            var addon = (AtkUnitBase*)args.Addon;
+            var addon = (AtkUnitBase*)args.Addon.Address;
             var value = new AtkValue
             {
                 Type = ValueType.Int,
@@ -213,7 +200,7 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
     private void UpdatePetMirageSettings()
     {
         var playerState = PlayerState.Instance();
-        if (playerState == null || playerState->IsLoaded != 0x01)
+        if (playerState == null || !playerState->IsLoaded)
             return;
 
         var contentId = playerState->ContentId;
@@ -373,7 +360,7 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
         if (actionTimeline.Key.IsEmpty)
             return;
 
-        _logger.LogInformation("Preloading tmb {key} (Emote: {emoteId}, ActionTimeline: {actionTimelineId})", actionTimeline.Key.ExtractText(), emoteId, actionTimelineId);
+        _logger.LogInformation("Preloading tmb {key} (Emote: {emoteId}, ActionTimeline: {actionTimelineId})", actionTimeline.Key.ToString(), emoteId, actionTimelineId);
 
         fixed (byte* keyPtr = actionTimeline.Key.Data.Span.WithNullTerminator())
         {
@@ -438,7 +425,7 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
 
         if (intro != 0 && loop != 0)
         {
-            ((HaselTimelineContainer*)(nint)(&_currentEntry.Character->Timeline))->PlayActionTimeline(intro, loop);
+            _currentEntry.Character->Timeline.PlayActionTimeline(intro, loop);
         }
         else if (loop != 0)
         {
@@ -579,7 +566,7 @@ public unsafe partial class EnhancedLoginLogout : IConfigurableTweak
         if (!_excelService.TryGetRow<TerritoryType>(territoryTypeId, out var territoryType))
             return;
 
-        var bg = territoryType.Bg.ExtractText();
+        var bg = territoryType.Bg.ToString();
 
         _logger.LogDebug("Preloading territory #{territoryId}: {bg}", territoryTypeId, bg);
 

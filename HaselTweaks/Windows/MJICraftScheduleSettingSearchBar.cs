@@ -11,6 +11,7 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
     private readonly PluginConfig _pluginConfig;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
+    private readonly LanguageProvider _languageProvider;
     private bool _inputFocused;
     private string _query = string.Empty;
 
@@ -88,7 +89,7 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
                     if (!_excelService.TryGetRow<Item>(mjiCraftworksObject.Item.RowId, Config.SearchLanguage, out var itemRow))
                         continue;
 
-                    var itemName = itemRow.Name.ExtractText();
+                    var itemName = itemRow.Name.ToString();
                     if (string.IsNullOrEmpty(itemName))
                         continue;
 
@@ -96,8 +97,7 @@ public unsafe partial class MJICraftScheduleSettingSearchBar : SimpleWindow
                 }
             }
 
-            var result = entries.FuzzyMatch(_query.ToLower().Trim(), value => value.ItemName).FirstOrDefault();
-            if (result != default)
+            if (entries.FuzzyMatch(_query.ToLower().Trim(), value => value.ItemName, _languageProvider.CultureInfo).TryGetFirst(out var result))
             {
                 var index = result.Value.Index;
                 var item = Addon->TreeList->GetItem(index);

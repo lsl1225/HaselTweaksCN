@@ -9,12 +9,11 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class EnhancedMaterialList : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class EnhancedMaterialList : ConfigurableTweak
 {
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
-    private readonly ILogger<EnhancedMaterialList> _logger;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly IFramework _framework;
@@ -39,9 +38,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
     private DateTime _timeOfRecipeTreeRefresh;
     private bool _handleRecipeResultItemContextMenu;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _agentRecipeMaterialListReceiveEventHook = _gameInteropProvider.HookFromAddress<AgentRecipeMaterialList.Delegates.ReceiveEvent>(
             AgentRecipeMaterialList.StaticVirtualTablePointer->ReceiveEvent,
@@ -54,10 +51,11 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         _addItemContextMenuEntriesHook = _gameInteropProvider.HookFromAddress<AgentRecipeItemContext.Delegates.AddItemContextMenuEntries>(
             AgentRecipeItemContext.MemberFunctionPointers.AddItemContextMenuEntries,
             AddItemContextMenuEntriesDetour);
-    }
 
-    public void OnEnable()
-    {
+        _agentRecipeMaterialListReceiveEventHook.Enable();
+        _addonRecipeMaterialListSetupRowHook.Enable();
+        _addItemContextMenuEntriesHook.Enable();
+
         _addonLifecycle.RegisterListener(AddonEvent.PostReceiveEvent, "RecipeMaterialList", RecipeMaterialList_PostReceiveEvent);
         _addonLifecycle.RegisterListener(AddonEvent.PostReceiveEvent, "RecipeTree", RecipeTree_PostReceiveEvent);
 
@@ -68,13 +66,9 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
 
         if (_clientState.IsLoggedIn)
             OnLogin();
-
-        _agentRecipeMaterialListReceiveEventHook?.Enable();
-        _addonRecipeMaterialListSetupRowHook?.Enable();
-        _addItemContextMenuEntriesHook?.Enable();
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _addonLifecycle.UnregisterListener(AddonEvent.PostReceiveEvent, "RecipeMaterialList", RecipeMaterialList_PostReceiveEvent);
         _addonLifecycle.UnregisterListener(AddonEvent.PostReceiveEvent, "RecipeTree", RecipeTree_PostReceiveEvent);
@@ -84,25 +78,17 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         _gameInventory.InventoryChangedRaw -= OnInventoryUpdate;
         _clientState.Login -= OnLogin;
 
-        _agentRecipeMaterialListReceiveEventHook?.Disable();
-        _addonRecipeMaterialListSetupRowHook?.Disable();
-        _addItemContextMenuEntriesHook?.Disable();
+        _agentRecipeMaterialListReceiveEventHook?.Dispose();
+        _agentRecipeMaterialListReceiveEventHook = null;
+
+        _addonRecipeMaterialListSetupRowHook?.Dispose();
+        _addonRecipeMaterialListSetupRowHook = null;
+
+        _addItemContextMenuEntriesHook?.Dispose();
+        _addItemContextMenuEntriesHook = null;
 
         if (Status is TweakStatus.Enabled && TryGetAddon<AtkUnitBase>("RecipeMaterialList", out var addon))
             addon->Close(true);
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
-        _agentRecipeMaterialListReceiveEventHook?.Dispose();
-        _addonRecipeMaterialListSetupRowHook?.Dispose();
-        _addItemContextMenuEntriesHook?.Dispose();
-
-        Status = TweakStatus.Disposed;
     }
 
     private void OnAddonOpen(string addonName)
@@ -179,11 +165,8 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
                 if (Config.DisableClickToOpenMapForCrystals && (!_excelService.TryGetRow<Item>(itemId, out var item) || item.ItemUICategory.RowId == 59))
                     return;
 
-                var tuple = GetPointForItem(itemId);
-                if (tuple == null)
+                if (!TryGetPointForItem(itemId, out _, out var point, out _, out _, out _))
                     return;
-
-                var (totalPoints, point, cost, isSameZone, placeName) = tuple.Value;
 
                 _mapService.OpenMap(point, itemId, "HaselTweaks"u8);
 
@@ -280,7 +263,7 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
             return;
 
         var textPtr = nameNode->GetText();
-        if (textPtr.Value == null)
+        if (!textPtr.HasValue)
             return;
 
         // TODO: only for missing items?
@@ -292,22 +275,20 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         if (Config.DisableZoneNameForCrystals && item.ItemUICategory.RowId == 59)
             return;
 
-        var tuple = GetPointForItem(itemId);
-        if (tuple == null)
+        if (!TryGetPointForItem(itemId, out _, out _, out _, out var isSameZone, out var placeNameSeString))
             return;
 
-        var (totalPoints, point, cost, isSameZone, placeNameSeString) = tuple.Value;
-
-        nameNode->Y = 14;
-        nameNode->TextFlags = 192; // allow multiline text (not sure on the actual flags it sets though)
+        nameNode->Y = 4;
+        nameNode->Height = 34;
+        nameNode->TextFlags = TextFlags.MultiLine;
         nameNode->LineSpacing = 17;
         nameNode->DrawFlags |= 0x1;
 
-        var itemName = textPtr.ExtractText().Replace("\r\n", "");
+        var itemName = textPtr.AsReadOnlySeStringSpan().ToString().Replace("\r\n", "");
         if (itemName.Length > 23)
             itemName = itemName[..20] + "...";
 
-        var placeName = placeNameSeString.ExtractText();
+        var placeName = placeNameSeString.ToString();
         if (placeName.Length > 23)
             placeName = placeName[..20] + "...";
 
@@ -353,11 +334,23 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         flags |= 2;
     }
 
-    private (int, GatheringPoint, uint, bool, ReadOnlySeString)? GetPointForItem(uint itemId)
+    private bool TryGetPointForItem(
+        uint itemId,
+        out int totalPoints,
+        out GatheringPoint point,
+        out uint cost,
+        out bool isSameZone,
+        out ReadOnlySeString placeName)
     {
+        totalPoints = default;
+        point = default;
+        cost = default;
+        isSameZone = default;
+        placeName = default;
+
         var gatheringItems = _itemService.GetGatheringItems(itemId);
         if (gatheringItems.Length == 0)
-            return null;
+            return false;
 
         // TODO: rethink this
         var gatheringPointSheet = _excelService.GetSheet<GatheringPoint>();
@@ -373,12 +366,15 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
             .ToList();
 
         if (gatheringPoints.Count == 0)
-            return null;
+            return false;
 
         var currentTerritoryTypeId = GameMain.Instance()->CurrentTerritoryTypeId;
-        var point = gatheringPoints.FirstOrDefault(row => row.TerritoryType.RowId == currentTerritoryTypeId);
-        var isSameZone = point.RowId != 0;
-        var cost = 0u;
+
+        totalPoints = gatheringPoints.Count;
+        point = gatheringPoints.FirstOrDefault(row => row.TerritoryType.RowId == currentTerritoryTypeId);
+        isSameZone = point.RowId != 0;
+        cost = 0u;
+
         if (point.RowId == 0)
         {
             foreach (var p in gatheringPoints)
@@ -396,9 +392,13 @@ public unsafe partial class EnhancedMaterialList : IConfigurableTweak
         }
 
         if (point.RowId == 0)
-            return null;
+            return false;
 
-        var placeName = point.TerritoryType.ValueNullable?.PlaceName.ValueNullable?.Name;
-        return placeName == null ? null : (gatheringPoints.Count, point, cost, isSameZone, (ReadOnlySeString)placeName);
+        var nullablePlayeName = point.TerritoryType.ValueNullable?.PlaceName.ValueNullable?.Name;
+        if (nullablePlayeName == null)
+            return false;
+
+        placeName = (ReadOnlySeString)nullablePlayeName;
+        return true;
     }
 }

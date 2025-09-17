@@ -1,13 +1,15 @@
+using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using HaselCommon.Commands;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class Commands : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class Commands : ConfigurableTweak
 {
     private readonly PluginConfig _pluginConfig;
     private readonly LanguageProvider _languageProvider;
@@ -16,47 +18,49 @@ public unsafe partial class Commands : IConfigurableTweak
     private readonly ItemService _itemService;
     private readonly CommandService _commandService;
     private readonly ConfigGui _configGui;
+    private readonly ICondition _condition;
+    private readonly IFramework _framework;
 
     private CommandHandler? _itemLinkCommandHandler;
     private CommandHandler? _whatMountCommandCommandHandler;
     private CommandHandler? _whatEmoteCommandCommandHandler;
     private CommandHandler? _whatBardingCommandCommandHandler;
     private CommandHandler? _glamourPlateCommandCommandHandler;
+    private CommandHandler? _reloadUICommandCommandHandler;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _itemLinkCommandHandler = _commandService.Register(OnItemLinkCommand);
         _whatMountCommandCommandHandler = _commandService.Register(OnWhatMountCommand);
         _whatEmoteCommandCommandHandler = _commandService.Register(OnWhatEmoteCommand);
         _whatBardingCommandCommandHandler = _commandService.Register(OnWhatBardingCommand);
         _glamourPlateCommandCommandHandler = _commandService.Register(OnGlamourPlateCommand);
-    }
+        _reloadUICommandCommandHandler = _commandService.Register(OnReloadUICommand);
 
-    public void OnEnable()
-    {
         UpdateCommands(true);
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         UpdateCommands(false);
-    }
 
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
         _itemLinkCommandHandler?.Dispose();
-        _whatMountCommandCommandHandler?.Dispose();
-        _whatEmoteCommandCommandHandler?.Dispose();
-        _whatBardingCommandCommandHandler?.Dispose();
-        _glamourPlateCommandCommandHandler?.Dispose();
+        _itemLinkCommandHandler = null;
 
-        Status = TweakStatus.Disposed;
+        _whatMountCommandCommandHandler?.Dispose();
+        _whatMountCommandCommandHandler = null;
+
+        _whatEmoteCommandCommandHandler?.Dispose();
+        _whatEmoteCommandCommandHandler = null;
+
+        _whatBardingCommandCommandHandler?.Dispose();
+        _whatBardingCommandCommandHandler = null;
+
+        _glamourPlateCommandCommandHandler?.Dispose();
+        _glamourPlateCommandCommandHandler = null;
+
+        _reloadUICommandCommandHandler?.Dispose();
+        _reloadUICommandCommandHandler = null;
     }
 
     private void UpdateCommands(bool enable)
@@ -66,19 +70,15 @@ public unsafe partial class Commands : IConfigurableTweak
         _whatEmoteCommandCommandHandler?.SetEnabled(enable && Config.EnableWhatEmoteCommand);
         _whatBardingCommandCommandHandler?.SetEnabled(enable && Config.EnableWhatBardingCommand);
         _glamourPlateCommandCommandHandler?.SetEnabled(enable && Config.EnableGlamourPlateCommand);
+        _reloadUICommandCommandHandler?.SetEnabled(enable && Config.EnableReloadUICommand);
     }
 
     [CommandHandler("/itemlink", "Commands.Config.EnableItemLinkCommand.Description", DisplayOrder: 2)]
     private void OnItemLinkCommand(string command, string arguments)
     {
-        uint id;
-        try
+        if (!uint.TryParse(arguments.Trim(), out var id))
         {
-            id = Convert.ToUInt32(arguments.Trim());
-        }
-        catch (Exception e)
-        {
-            Chat.PrintError(e.Message);
+            Chat.PrintError(_textService.Translate("Commands.InvalidArguments"));
             return;
         }
 
@@ -229,11 +229,11 @@ public unsafe partial class Commands : IConfigurableTweak
             .Append($"  {_textService.GetAddonText(4987)}: ")
             .Append(_textService.GetStainName(character->DrawData.Equipment(DrawDataContainer.EquipmentSlot.Legs).Stain0))
             .AppendNewLine()
-            .Append($"  {_textService.GetAddonText(4991)}: {(hasTopRow ? topRow.Name.ExtractText() : _textService.GetAddonText(4994))}")
+            .Append($"  {_textService.GetAddonText(4991)}: {(hasTopRow ? topRow.Name.ToString() : _textService.GetAddonText(4994))}")
             .AppendNewLine()
-            .Append($"  {_textService.GetAddonText(4992)}: {(hasBodyRow ? bodyRow.Name.ExtractText() : _textService.GetAddonText(4994))}")
+            .Append($"  {_textService.GetAddonText(4992)}: {(hasBodyRow ? bodyRow.Name.ToString() : _textService.GetAddonText(4994))}")
             .AppendNewLine()
-            .Append($"  {_textService.GetAddonText(4993)}: {(hasLegsRow ? legsRow.Name.ExtractText() : _textService.GetAddonText(4994))}");
+            .Append($"  {_textService.GetAddonText(4993)}: {(hasLegsRow ? legsRow.Name.ToString() : _textService.GetAddonText(4994))}");
 
         Chat.Print(sb.GetViewAsSpan());
     }
@@ -241,7 +241,7 @@ public unsafe partial class Commands : IConfigurableTweak
     [CommandHandler("/glamourplate", "Commands.Config.EnableGlamourPlateCommand.Description", DisplayOrder: 2)]
     private void OnGlamourPlateCommand(string command, string arguments)
     {
-        if (!byte.TryParse(arguments, out var glamourPlateId) || glamourPlateId == 0 || glamourPlateId > 20)
+        if (!byte.TryParse(arguments.Trim(), out var glamourPlateId) || glamourPlateId == 0 || glamourPlateId > 20)
         {
             Chat.PrintError(_textService.Translate("Commands.InvalidArguments"));
             return;
@@ -255,5 +255,30 @@ public unsafe partial class Commands : IConfigurableTweak
         }
 
         raptureGearsetModule->EquipGearset(raptureGearsetModule->CurrentGearsetIndex, glamourPlateId);
+    }
+
+    [CommandHandler("/reloadui", "Commands.Config.EnableReloadUICommand.Description")]
+    private unsafe void OnReloadUICommand(string command, string arguments)
+    {
+        var raptureAtkModule = RaptureAtkModule.Instance();
+
+        if (raptureAtkModule->UiMode != 1 || !_condition.OnlyAny(
+            ConditionFlag.NormalConditions,
+            ConditionFlag.InThatPosition,
+            ConditionFlag.Jumping,
+            ConditionFlag.Mounted,
+            ConditionFlag.InFlight,
+            ConditionFlag.UsingFashionAccessory))
+        {
+            Chat.PrintError(_textService.GetLogMessage(10775));
+            return;
+        }
+
+        // Note: The game calls Hide on all agents, which causes AgentHousingPlant to unblock inventory slots.
+        // This triggers an inventory/shop/retainer/recipe, and most importantly, a map markers update.
+        // For that, EventFramework sends a packet and the server responds with a packet, triggering the map markers update.
+        // This seems to be a very normal and frequent thing to occur, with a back-off of 2 seconds, so nothing to worry about.
+        raptureAtkModule->ChangeUiMode(0);
+        _framework.RunOnTick(() => raptureAtkModule->ChangeUiMode(1));
     }
 }

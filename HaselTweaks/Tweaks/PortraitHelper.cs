@@ -16,8 +16,8 @@ using LSeStringBuilder = Lumina.Text.SeStringBuilder;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class PortraitHelper : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class PortraitHelper : ConfigurableTweak
 {
     private static readonly TimeSpan CheckDelay = TimeSpan.FromMilliseconds(500);
 
@@ -26,9 +26,9 @@ public unsafe partial class PortraitHelper : IConfigurableTweak
 
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
+    private readonly IChatGui _chatGui;
     private readonly TextService _textService;
     private readonly ExcelService _excelService;
-    private readonly ILogger<PortraitHelper> _logger;
     private readonly IGameInteropProvider _gameInteropProvider;
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly IFramework _framework;
@@ -45,9 +45,7 @@ public unsafe partial class PortraitHelper : IConfigurableTweak
     private bool _wasBoundByDuty;
     private bool _blockBannerPreview;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _onClipboardDataChangedHook = _gameInteropProvider.HookFromAddress<UIClipboard.Delegates.OnClipboardDataChanged>(
             UIClipboard.MemberFunctionPointers.OnClipboardDataChanged,
@@ -60,11 +58,12 @@ public unsafe partial class PortraitHelper : IConfigurableTweak
         _agentBannerPreviewShowHook = _gameInteropProvider.HookFromAddress<AgentBannerPreview.Delegates.Show>(
             AgentBannerPreview.Instance()->VirtualTable->Show,
             AgentBannerPreviewShowDetour);
-    }
 
-    public void OnEnable()
-    {
-        _openPortraitEditPayload = _pluginInterface.AddChatLinkHandler(1000, OpenPortraitEditChatHandler);
+        _onClipboardDataChangedHook.Enable();
+        _updateGearsetHook.Enable();
+        _agentBannerPreviewShowHook.Enable();
+
+        _openPortraitEditPayload = _chatGui.AddChatLinkHandler(1, OpenPortraitEditChatHandler);
 
         if (IsAddonOpen(AgentId.BannerEditor))
             OnAddonOpen("BannerEditor");
@@ -73,39 +72,28 @@ public unsafe partial class PortraitHelper : IConfigurableTweak
         _addonObserver.AddonClose += OnAddonClose;
         _clientState.TerritoryChanged += OnTerritoryChanged;
         _clientState.ClassJobChanged += OnClassJobChange;
-
-        _onClipboardDataChangedHook?.Enable();
-        _updateGearsetHook?.Enable();
-        _agentBannerPreviewShowHook?.Enable();
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _addonObserver.AddonOpen -= OnAddonOpen;
         _addonObserver.AddonClose -= OnAddonClose;
         _clientState.TerritoryChanged -= OnTerritoryChanged;
         _clientState.ClassJobChanged -= OnClassJobChange;
 
-        _pluginInterface.RemoveChatLinkHandler(1000);
+        if (_openPortraitEditPayload != null)
+            _chatGui.RemoveChatLinkHandler(_openPortraitEditPayload.CommandId);
 
         _menuBar.Close();
 
-        _onClipboardDataChangedHook?.Disable();
-        _updateGearsetHook?.Disable();
-        _agentBannerPreviewShowHook?.Disable();
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
         _onClipboardDataChangedHook?.Dispose();
-        _updateGearsetHook?.Dispose();
-        _agentBannerPreviewShowHook?.Dispose();
+        _onClipboardDataChangedHook = null;
 
-        Status = TweakStatus.Disposed;
+        _updateGearsetHook?.Dispose();
+        _updateGearsetHook = null;
+
+        _agentBannerPreviewShowHook?.Dispose();
+        _agentBannerPreviewShowHook = null;
     }
 
     private void OpenPortraitEditChatHandler(uint commandId, DSeString message)

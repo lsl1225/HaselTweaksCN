@@ -10,13 +10,14 @@ using GearsetItem = FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule
 namespace HaselTweaks.Windows;
 
 [RegisterSingleton, AutoConstruct]
-public unsafe partial class GearSetGridWindow : LockableWindow
+public unsafe partial class GearSetGridWindow : SimpleWindow
 {
     private static readonly Vector2 IconSize = new(34);
     private static readonly Vector2 IconInset = IconSize * 0.08333f;
     private static readonly float ItemCellWidth = IconSize.X;
     private readonly IClientState _clientState;
-    private readonly TextureService _textureService;
+    private readonly ITextureProvider _textureProvider;
+    private readonly UldService _uldService;
     private readonly ExcelService _excelService;
     private readonly LanguageProvider _languageProvider;
     private readonly TextService _textService;
@@ -118,11 +119,11 @@ public unsafe partial class GearSetGridWindow : LockableWindow
                 if (ImGui.IsItemHovered())
                 {
                     using var tooltip = ImRaii.Tooltip();
-                    ImGui.TextUnformatted($"[{gearset->Id + 1}] {name}");
+                    ImGui.Text($"[{gearset->Id + 1}] {name}");
 
                     if (gearset->GlamourSetLink != 0)
                     {
-                        ImGui.TextUnformatted($"{_textService.GetAddonText(3185)}: {gearset->GlamourSetLink}"); // "Glamour Plate: {link}"
+                        ImGui.Text($"{_textService.GetAddonText(3185)}: {gearset->GlamourSetLink}"); // "Glamour Plate: {link}"
                     }
                 }
 
@@ -140,12 +141,12 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
                 // class icon
                 ImGui.SetCursorPos(itemStartPos);
-                _textureService.DrawIcon(62100 + gearset->ClassJob, iconSize);
+                _textureProvider.DrawIcon(62100 + gearset->ClassJob, iconSize);
 
                 // gearset number
                 var text = $"{gearsetIndex + 1}";
                 ImGui.SetCursorPos(itemStartPos + new Vector2(iconSize / 2f - ImGui.CalcTextSize(text).X / 2f, iconSize));
-                ImGui.TextUnformatted(text);
+                ImGui.Text(text);
             }
 
             for (var slotIndex = 0u; slotIndex < NUM_SLOTS; slotIndex++)
@@ -168,7 +169,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
                     // icon background
                     ImGui.SetCursorPos(cursorPos);
-                    _textureService.DrawPart("Character", 8, 0, IconSize * ImGuiHelpers.GlobalScale);
+                    _uldService.DrawPart("Character", 8, 0, IconSize * ImGuiHelpers.GlobalScale);
 
                     ImGui.SetCursorPos(cursorPos + IconInset * ImGuiHelpers.GlobalScale);
                     var iconIndex = slotIndex switch
@@ -176,7 +177,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
                         12 => 11u, // left ring
                         _ => slotIndex,
                     };
-                    _textureService.DrawPart("Character", 12, 17 + iconIndex, (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
+                    _uldService.DrawPart("Character", 12, 17 + iconIndex, (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
 
                     continue;
                 }
@@ -190,7 +191,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
                 var itemLevelText = $"{item.LevelItem.RowId}";
                 ImGuiUtils.PushCursorX(IconSize.X * ImGuiHelpers.GlobalScale / 2f - ImGui.CalcTextSize(itemLevelText).X / 2f);
-                ImGuiUtils.TextUnformattedColored(_itemService.GetItemLevelColor(gearset->ClassJob, item, Color.Red, Color.Yellow, Color.Green), itemLevelText);
+                ImGui.TextColored(_itemService.GetItemLevelColor(gearset->ClassJob, item, Color.Red, Color.Yellow, Color.Green), itemLevelText);
 
                 ImGuiUtils.PushCursorY(2f * ImGuiHelpers.GlobalScale);
             }
@@ -223,21 +224,21 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         // icon background
         ImGui.SetCursorPos(startPos);
-        _textureService.DrawPart("Character", 7, 4, IconSize * ImGuiHelpers.GlobalScale);
+        _uldService.DrawPart("Character", 7, 4, IconSize * ImGuiHelpers.GlobalScale);
 
         // icon
         ImGui.SetCursorPos(startPos + IconInset * ImGuiHelpers.GlobalScale);
-        _textureService.DrawIcon(new GameIconLookup(item.Icon, ItemUtil.IsHighQuality(slot->ItemId)), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
+        _textureProvider.DrawIcon(new GameIconLookup(item.Icon, ItemUtil.IsHighQuality(slot->ItemId)), (IconSize - IconInset * 2f) * ImGuiHelpers.GlobalScale);
 
         // icon overlay
         ImGui.SetCursorPos(startPos);
-        _textureService.DrawPart("Character", 7, 0, IconSize * ImGuiHelpers.GlobalScale);
+        _uldService.DrawPart("Character", 7, 0, IconSize * ImGuiHelpers.GlobalScale);
 
         // icon hover effect
         if (ImGui.IsItemHovered() || ImGui.IsPopupOpen("ItemTooltip"))
         {
             ImGui.SetCursorPos(startPos);
-            _textureService.DrawPart("Character", 7, 5, IconSize * ImGuiHelpers.GlobalScale);
+            _uldService.DrawPart("Character", 7, 5, IconSize * ImGuiHelpers.GlobalScale);
         }
 
         ImGui.SetCursorPos(startPos + new Vector2(0, (IconSize.Y - 3) * ImGuiHelpers.GlobalScale));
@@ -257,19 +258,19 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         using var _ = ImRaii.Tooltip();
 
-        ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(item.RowId), _textService.GetItemName(item.RowId).ExtractText().StripSoftHyphen());
+        ImGui.TextColored(_itemService.GetItemRarityColor(item.RowId), _textService.GetItemName(item.RowId).ToString());
 
         var holdingShift = ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift);
         if (holdingShift)
         {
             ImGuiUtils.SameLineSpace();
-            ImGui.TextUnformatted($"[{item.RowId}]");
+            ImGui.Text($"[{item.RowId}]");
         }
 
         if (item.ItemUICategory.IsValid)
         {
             ImGuiUtils.PushCursorY(-ImGui.GetStyle().ItemSpacing.Y);
-            ImGui.TextUnformatted(item.ItemUICategory.Value.Name.ExtractText() ?? string.Empty);
+            ImGui.Text(item.ItemUICategory.Value.Name.ToString() ?? string.Empty);
         }
 
         if (slot->GlamourId != 0 || slot->Stain0Id != 0 || slot->Stain1Id != 0)
@@ -277,46 +278,46 @@ public unsafe partial class GearSetGridWindow : LockableWindow
 
         if (slot->GlamourId != 0 && _excelService.TryGetRow<Item>(slot->GlamourId, out var glamourItem))
         {
-            ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelGlamour"));
+            ImGui.Text(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelGlamour"));
             ImGuiUtils.SameLineSpace();
-            ImGuiUtils.TextUnformattedColored(_itemService.GetItemRarityColor(glamourItem.RowId), _textService.GetItemName(slot->GlamourId).ExtractText().StripSoftHyphen());
+            ImGui.TextColored(_itemService.GetItemRarityColor(glamourItem.RowId), _textService.GetItemName(slot->GlamourId).ToString());
 
             if (holdingShift)
             {
                 ImGuiUtils.SameLineSpace();
-                ImGui.TextUnformatted($"[{slot->GlamourId}]");
+                ImGui.Text($"[{slot->GlamourId}]");
             }
         }
 
         if (slot->Stain0Id != 0 && _excelService.TryGetRow<Stain>(slot->Stain0Id, out var stain0))
         {
-            ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye0"));
+            ImGui.Text(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye0"));
             ImGuiUtils.SameLineSpace();
             using (ImRaii.PushColor(ImGuiCol.Text, stain0.GetColor().ToUInt()))
                 ImGui.Bullet();
             ImGui.SameLine(0, 0);
-            ImGui.TextUnformatted(stain0.Name.ExtractText().FirstCharToUpper(_languageProvider.CultureInfo));
+            ImGui.Text(stain0.Name.ToString().FirstCharToUpper(_languageProvider.CultureInfo));
 
             if (holdingShift)
             {
                 ImGuiUtils.SameLineSpace();
-                ImGui.TextUnformatted($"[{slot->Stain0Id}]");
+                ImGui.Text($"[{slot->Stain0Id}]");
             }
         }
 
         if (slot->Stain1Id != 0 && _excelService.TryGetRow<Stain>(slot->Stain1Id, out var stain1))
         {
-            ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye1"));
+            ImGui.Text(_textService.Translate("GearSetGridWindow.ItemTooltip.LabelDye1"));
             ImGuiUtils.SameLineSpace();
             using (ImRaii.PushColor(ImGuiCol.Text, stain1.GetColor().ToUInt()))
                 ImGui.Bullet();
             ImGui.SameLine(0, 0);
-            ImGui.TextUnformatted(stain1.Name.ExtractText().FirstCharToUpper(_languageProvider.CultureInfo));
+            ImGui.Text(stain1.Name.ToString().FirstCharToUpper(_languageProvider.CultureInfo));
 
             if (holdingShift)
             {
                 ImGuiUtils.SameLineSpace();
-                ImGui.TextUnformatted($"[{slot->Stain1Id}]");
+                ImGui.Text($"[{slot->Stain1Id}]");
             }
         }
 
@@ -324,7 +325,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
         if (usedInGearsets.Count > 1)
         {
             ImGuiUtils.DrawPaddedSeparator();
-            ImGui.TextUnformatted(_textService.Translate("GearSetGridWindow.ItemTooltip.AlsoUsedInTheseGearsets"));
+            ImGui.Text(_textService.Translate("GearSetGridWindow.ItemTooltip.AlsoUsedInTheseGearsets"));
             using (ImRaii.PushIndent(ImGui.GetStyle().ItemSpacing.X))
             {
                 foreach (var entry in usedInGearsets)
@@ -332,7 +333,7 @@ public unsafe partial class GearSetGridWindow : LockableWindow
                     if (entry.Id == gearset->Id)
                         continue;
 
-                    ImGui.TextUnformatted($"[{entry.Id + 1}] {entry.Name}");
+                    ImGui.Text($"[{entry.Id + 1}] {entry.Name}");
                 }
             }
         }

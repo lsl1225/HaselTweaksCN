@@ -3,37 +3,22 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class MarketBoardItemPreview : ITweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class MarketBoardItemPreview : Tweak
 {
-    private readonly ILogger<MarketBoardItemPreview> _logger;
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
     private readonly ItemService _itemService;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize() { }
-
-    public void OnEnable()
+    public override void OnEnable()
     {
         _addonLifecycle.RegisterListener(AddonEvent.PostReceiveEvent, "ItemSearch", ItemSearch_PostReceiveEvent);
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _addonLifecycle.UnregisterListener(AddonEvent.PostReceiveEvent, "ItemSearch", ItemSearch_PostReceiveEvent);
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
-
-        Status = TweakStatus.Disposed;
     }
 
     private void ItemSearch_PostReceiveEvent(AddonEvent type, AddonArgs args)
@@ -52,6 +37,6 @@ public unsafe partial class MarketBoardItemPreview : ITweak
             return;
         }
 
-        AgentTryon.TryOn(((AtkUnitBase*)args.Addon)->Id, itemId, 0, 0, 0);
+        AgentTryon.TryOn(((AtkUnitBase*)args.Addon.Address)->Id, itemId, 0, 0, 0);
     }
 }

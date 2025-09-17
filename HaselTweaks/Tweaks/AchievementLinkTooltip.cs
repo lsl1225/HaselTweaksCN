@@ -7,54 +7,40 @@ using Achievement = Lumina.Excel.Sheets.Achievement;
 
 namespace HaselTweaks.Tweaks;
 
-[RegisterSingleton<ITweak>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
-public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
+[RegisterSingleton<IHostedService>(Duplicate = DuplicateStrategy.Append), AutoConstruct]
+public unsafe partial class AchievementLinkTooltip : ConfigurableTweak
 {
     private static readonly string[] ChatPanels = ["ChatLogPanel_0", "ChatLogPanel_1", "ChatLogPanel_2", "ChatLogPanel_3"];
 
     private readonly PluginConfig _pluginConfig;
     private readonly ConfigGui _configGui;
+    private readonly IFramework _framework;
     private readonly TextService _textService;
     private readonly IAddonLifecycle _addonLifecycle;
     private readonly ExcelService _excelService;
     private Utf8String* _tooltipText;
 
-    public TweakStatus Status { get; set; } = TweakStatus.Uninitialized;
-
-    public void OnInitialize()
+    public override void OnEnable()
     {
         _tooltipText = Utf8String.CreateEmpty();
-    }
 
-    public void OnEnable()
-    {
         _addonLifecycle.RegisterListener(AddonEvent.PostReceiveEvent, ChatPanels, OnChatLogPanelPostReceiveEvent);
     }
 
-    public void OnDisable()
+    public override void OnDisable()
     {
         _addonLifecycle.UnregisterListener(AddonEvent.PostReceiveEvent, ChatPanels, OnChatLogPanelPostReceiveEvent);
-    }
-
-    void IDisposable.Dispose()
-    {
-        if (Status is TweakStatus.Disposed or TweakStatus.Outdated)
-            return;
-
-        OnDisable();
 
         if (_tooltipText != null)
         {
             _tooltipText->Dtor(true);
             _tooltipText = null;
         }
-
-        Status = TweakStatus.Disposed;
     }
 
     private void OnChatLogPanelPostReceiveEvent(AddonEvent type, AddonArgs args)
     {
-        var addon = (AddonChatLogPanel*)args.Addon;
+        var addon = (AddonChatLogPanel*)args.Addon.Address;
 
         if (!addon->IsReady || addon->LogViewer.IsSelectingText || addon->IsResizing)
             return;
@@ -131,7 +117,7 @@ public unsafe partial class AchievementLinkTooltip : IConfigurableTweak
             }
         }
 
-        _tooltipText->SetString(sb.ToArray());
+        _tooltipText->SetString(sb.GetViewAsSpan());
 
         // ShowTooltip call @ AddonChatLog_OnRefresh, case 0x12
         AtkStage.Instance()->TooltipManager.ShowTooltip(
