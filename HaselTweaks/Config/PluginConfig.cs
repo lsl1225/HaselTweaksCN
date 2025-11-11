@@ -26,10 +26,10 @@ public partial class PluginConfig : IPluginConfiguration
     [JsonIgnore]
     private static IPluginLog? PluginLog;
 
-    public static PluginConfig Load(IServiceProvider serviceProvider)
+    public static PluginConfig Load(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
     {
-        PluginInterface = serviceProvider.GetRequiredService<IDalamudPluginInterface>();
-        PluginLog = serviceProvider.GetRequiredService<IPluginLog>();
+        PluginInterface = pluginInterface;
+        PluginLog = pluginLog;
 
         SerializerOptions = new JsonSerializerOptions()
         {
@@ -123,6 +123,7 @@ public class TweakConfigs
     public AutoSorterConfiguration AutoSorter { get; init; } = new();
     public BackgroundMusicKeybindConfiguration BackgroundMusicKeybind { get; init; } = new();
     public CharacterClassSwitcherConfiguration CharacterClassSwitcher { get; init; } = new();
+    public CosmicResearchTodoConfiguration CosmicResearchTodo { get; init; } = new();
     public CommandsConfiguration Commands { get; init; } = new();
     public CustomChatMessageFormatsConfiguration CustomChatMessageFormats { get; init; } = new();
     public CustomChatTimestampConfiguration CustomChatTimestamp { get; init; } = new();
@@ -142,4 +143,37 @@ public class TweakConfigs
     public PortraitHelperConfiguration PortraitHelper { get; init; } = new();
     public ScrollableTabsConfiguration ScrollableTabs { get; init; } = new();
     public ShopItemIconsConfiguration ShopItemIcons { get; init; } = new();
+}
+
+public static class PluginConfigExtension
+{
+    public static void AddConfig(this IServiceCollection services, PluginConfig pluginConfig)
+    {
+        services.AddSingleton(pluginConfig);
+        services.AddSingleton(pluginConfig.Tweaks.AchievementLinkTooltip);
+        services.AddSingleton(pluginConfig.Tweaks.AetherCurrentHelper);
+        services.AddSingleton(pluginConfig.Tweaks.AutoSorter);
+        services.AddSingleton(pluginConfig.Tweaks.BackgroundMusicKeybind);
+        services.AddSingleton(pluginConfig.Tweaks.CharacterClassSwitcher);
+        services.AddSingleton(pluginConfig.Tweaks.CosmicResearchTodo);
+        services.AddSingleton(pluginConfig.Tweaks.Commands);
+        services.AddSingleton(pluginConfig.Tweaks.CustomChatMessageFormats);
+        services.AddSingleton(pluginConfig.Tweaks.CustomChatTimestamp);
+        services.AddSingleton(pluginConfig.Tweaks.DTR);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedExpBar);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedIsleworksAgenda);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedLoginLogout);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedMaterialList);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedMonsterNote);
+        services.AddSingleton(pluginConfig.Tweaks.EnhancedTargetInfo);
+        services.AddSingleton(pluginConfig.Tweaks.ForcedCutsceneMusic);
+        services.AddSingleton(pluginConfig.Tweaks.GearSetGrid);
+        services.AddSingleton(pluginConfig.Tweaks.InventoryHighlight);
+        services.AddSingleton(pluginConfig.Tweaks.LockWindowPosition);
+        services.AddSingleton(pluginConfig.Tweaks.MaterialAllocation);
+        services.AddSingleton(pluginConfig.Tweaks.MinimapAdjustments);
+        services.AddSingleton(pluginConfig.Tweaks.PortraitHelper);
+        services.AddSingleton(pluginConfig.Tweaks.ScrollableTabs);
+        services.AddSingleton(pluginConfig.Tweaks.ShopItemIcons);
+    }
 }

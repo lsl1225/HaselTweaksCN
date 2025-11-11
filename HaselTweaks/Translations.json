@@ -431,6 +431,22 @@
     "zh": "陆行鸟搭档颜色预览"
   },
 
+  "CosmicResearchTodo.Tweak.Name": {
+    "en": "Cosmic Research in Duty List"
+  },
+  "CosmicResearchTodo.Tweak.Description": {
+    "en": "Displays the progress of Cosmic Research in the Duty List during Cosmic Exploration.",
+    "de": "Zeigt den Fortschritt der Kosmo-Forschung in der Aufgabenliste während der Kosmo-Erkundung an."
+  },
+  "CosmicResearchTodo.Config.ShowCosmicToolScore.Label": {
+    "en": "Show class score for achievements after completing Cosmic Research",
+    "de": "Zeige Wertungen für Errungenschaften nach Abschluss der Kosmo-Forschung an"
+  },
+  "CosmicResearchTodo.Config.ShowCompletedAnalysis.Label": {
+    "en": "Show completed datasets",
+    "de": "Zeige abgeschlossene Daten"
+  },
+
   "CastBarAetheryteNames.Tweak.Name": {
     "en": "Cast Bar Aetheryte Names",
     "zh": "咏唱以太之光之名"
@@ -876,14 +892,6 @@
     "en": "Always show Companion Bar when chocobo companion summoned",
     "de": "Immer die Begleiterleiste anzeigen, wenn der Chocobo-Begleiter gerufen ist",
     "zh": "当陆行鸟搭档存在时始终显示搭档栏"
-  },
-  "EnhancedExpBar.Config.ForceCosmicResearchBar.Label": {
-    "en": "Always show Cosmic Research Bar in Cosmic Exploration",
-    "de": "Immer die Kosmo-Forschungsleiste während der Kosmo-Erkundung anzeigen"
-  },
-  "EnhancedExpBar.Config.ShowCosmicToolScore.Label": {
-    "en": "Show class score for achievements after completing Cosmic Research",
-    "de": "Zeige Wertungen für Errungenschaften nach Abschluss der Kosmo-Forschung an"
   },
   "EnhancedExpBar.Config.SanctuaryBarHideJob.Label": {
     "en": "Hide Job on Sanctuary Bar",
@@ -1391,6 +1399,14 @@
     "en": "These items can be stored in the Armoire!\nClick to restore item.",
     "de": "Diese Gegenstände können im Kostbarkeitenkabinett aufbewahrt werden!\nAnklicken, um in Ausrüstung zurückzuverwandeln.",
     "zh": "这些物品可以被存储到收藏柜中！\n点击以重新存储物品。"
+  },
+
+  "GlamourDresserKeyboardNavigation.Tweak.Name": {
+    "en": "Glamour Dresser Keyboard Navigation"
+  },
+  "GlamourDresserKeyboardNavigation.Tweak.Description": {
+    "en": "Enables using arrow keys to select items in the Glamour Dresser.",
+    "de": "Ermöglicht es mit Pfeiltasten die Gegenstände in der Projektionskommode auszuwählen."
   },
 
   "OutfitGlamourTryOn.Tweak.Name": {
@@ -2068,14 +2084,6 @@
     "en": "Accent \"{0}\" not unlocked",
     "de": "Verzierung \"{0}\" nicht freigeschaltet",
     "zh": "不包括边框和装饰物"
-  },
-
-  "RestoreGoldenCity.Tweak.Name": {
-    "en": "Restore Golden City"
-  },
-  "RestoreGoldenCity.Tweak.Description": {
-    "en": "When the quest \u201CDawntrail\u201D is completed, this tweak will restore the Golden City to its former glory - without New Game+.",
-    "de": "Wenn die Quest \u201EPfad der Morgensonne\u201C abgeschlossen ist, wird dieser Tweak die Goldene Stadt wieder in ihrem alten Glanz erstrahlen lassen - ohne Neues Spiel+."
   },
 
   "RevealDutyRequirements.Tweak.Name": {

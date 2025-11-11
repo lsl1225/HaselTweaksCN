@@ -102,6 +102,15 @@ Available Commands:
 
 Shows a small drop-down menu above the "Companion" window to select the color of your own chocobo. This is just to preview the colors and will not be saved!
 
+### Cosmic Research in Duty List
+
+Displays the progress of Cosmic Research in the Duty List during Cosmic Exploration.
+
+Configuration options:
+
+- Show class score for achievements after completing Cosmic Research (default on)
+- Show completed datasets (default on)
+
 ### Custom Chat Message Formats
 
 Lets you customize message formats for various chat channels.
@@ -127,13 +136,11 @@ Depending on the settings, the experience bar can be transformed into one of the
 - The PvP Series Bar displays your series rank and experience. If there is a \* symbol next to your rank, it means a rank-up reward is claimable.
 - The Companion Bar displays your chocobos rank and experience.
 - The Sanctuary Bar displays your sanctuary level and island experience.
-- The Cosmic Research Bar displays the dataset for your current job and its analysis progress.
 
 Configuration options:
 
 - Always show PvP Series Bar in PvP Areas
 - Always show Sanctuary Bar on the Island
-- Always show Cosmic Research Bar in Cosmic Exploration
 - Hide Job on Sanctuary Bar
 - Max Level Override
   - Will switch to the selected bar if your current job is on max level and none of the settings above apply.
@@ -247,6 +254,10 @@ Configuration options:
 
 Opens a small window next to the Glamour Dresser with a list of items that can be stored in the Armoire (only visible if qualified items were found).
 
+### Glamour Dresser Keyboard Navigation
+
+Enables using arrow keys to select items in the Glamour Dresser.
+
 ### Hide MSQ Complete
 
 Hides the Main Scenario Guide when the MSQ is completed, but still displays Job quests.
@@ -319,10 +330,6 @@ Configuration options:
   - You are in a place where glamour plates are allowed to be applied.
   - The glamour plate covers the slot(s) that caused the mismatch.
   - The mismatch was not caused by mainhand/headgear visibility or visor state.
-
-### Restore Golden City
-
-When the quest “Dawntrail” is completed, this tweak will restore the Golden City to its former glory - without New Game+.
 
 ### Reveal Duty Requirements
 
