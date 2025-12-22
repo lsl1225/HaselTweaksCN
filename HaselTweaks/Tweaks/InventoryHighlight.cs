@@ -1,6 +1,7 @@
 using Dalamud.Game.Config;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -74,7 +75,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
 
         if (IsHighlightActive())
         {
-            if (TryGetAddon<AtkUnitBase>("ItemDetail", out var addonItemDetail) && addonItemDetail->IsVisible)
+            if (TryGetAddon<AtkUnitBase>("ItemDetail"u8, out var addonItemDetail) && addonItemDetail->IsVisible)
                 addonItemDetail->IsVisible = false;
 
             var duplicateItemIds = GetDuplicateItemIds();
@@ -90,7 +91,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         }
         else if (_wasHighlighting)
         {
-            if (TryGetAddon<AtkUnitBase>("ItemDetail", out var addonItemDetail))
+            if (TryGetAddon<AtkUnitBase>("ItemDetail"u8, out var addonItemDetail))
                 addonItemDetail->IsVisible = true;
 
             ResetGrids();
@@ -107,10 +108,10 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         void ProcessInventoryType(InventoryType type)
         {
             var container = InventoryManager.Instance()->GetInventoryContainer(type);
-            if (!container->IsLoaded)
+            if (container == null || !container->IsLoaded)
                 return;
 
-            for (var i = 0; i < container->Size; i++)
+            for (var i = 0; i < container->GetSize(); i++)
             {
                 var slot = container->GetInventorySlot(i);
                 if (slot == null)
@@ -123,7 +124,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
             }
         }
 
-        if (IsAddonOpen("Inventory") || IsAddonOpen("InventoryLarge") || IsAddonOpen("InventoryExpansion"))
+        if (IsAddonOpen("Inventory"u8) || IsAddonOpen("InventoryLarge"u8) || IsAddonOpen("InventoryExpansion"u8))
         {
             ProcessInventoryType(InventoryType.Inventory1);
             ProcessInventoryType(InventoryType.Inventory2);
@@ -131,7 +132,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
             ProcessInventoryType(InventoryType.Inventory4);
         }
 
-        if (IsAddonOpen("InventoryBuddy"))
+        if (IsAddonOpen("InventoryBuddy"u8))
         {
             ProcessInventoryType(InventoryType.SaddleBag1);
             ProcessInventoryType(InventoryType.SaddleBag2);
@@ -139,7 +140,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
             ProcessInventoryType(InventoryType.PremiumSaddleBag2);
         }
 
-        if (IsAddonOpen("InventoryRetainer") || IsAddonOpen("InventoryRetainerLarge"))
+        if (IsAddonOpen("InventoryRetainer"u8) || IsAddonOpen("InventoryRetainerLarge"u8))
         {
             ProcessInventoryType(InventoryType.RetainerPage1);
             ProcessInventoryType(InventoryType.RetainerPage2);
@@ -158,22 +159,22 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         if (!UIInputData.Instance()->IsKeyDown(SeVirtualKey.SHIFT))
             return false;
 
-        if (IsAddonOpen("Inventory"))
+        if (IsAddonOpen("Inventory"u8))
             return true;
 
-        if (IsAddonOpen("InventoryLarge"))
+        if (IsAddonOpen("InventoryLarge"u8))
             return true;
 
-        if (IsAddonOpen("InventoryExpansion"))
+        if (IsAddonOpen("InventoryExpansion"u8))
             return true;
 
-        if (IsAddonOpen("InventoryBuddy"))
+        if (IsAddonOpen("InventoryBuddy"u8))
             return true;
 
-        if (IsAddonOpen("InventoryRetainer"))
+        if (IsAddonOpen("InventoryRetainer"u8))
             return true;
 
-        if (IsAddonOpen("InventoryRetainerLarge"))
+        if (IsAddonOpen("InventoryRetainerLarge"u8))
             return true;
 
         return false;
@@ -181,16 +182,15 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
 
     private void HighlightInInventory(HashSet<uint> duplicateItemIds)
     {
-        if (!(IsAddonOpen("Inventory") || IsAddonOpen("InventoryLarge") || IsAddonOpen("InventoryExpansion")))
+        if (!(IsAddonOpen("Inventory"u8) || IsAddonOpen("InventoryLarge"u8) || IsAddonOpen("InventoryExpansion"u8)))
             return;
 
         var sorter = UIModule.Instance()->GetItemOrderModule()->InventorySorter;
         if (sorter == null || sorter->SortFunctionIndex != -1)
             return;
 
-        for (var i = 0u; i < sorter->Items.LongCount; i++)
+        foreach (ItemOrderModuleSorterItemEntry* item in sorter->Items)
         {
-            var item = sorter->Items[i].Value;
             if (item == null)
                 continue;
 
@@ -228,7 +228,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
 
     private void HighlightInInventoryBuddy(HashSet<uint> duplicateItemIds)
     {
-        if (!TryGetAddon<AddonInventoryBuddy>("InventoryBuddy", out var addon))
+        if (!TryGetAddon<AddonInventoryBuddy>("InventoryBuddy"u8, out var addon))
             return;
 
         if (addon->TabIndex == 1 && !PlayerState.Instance()->HasPremiumSaddlebag)
@@ -241,9 +241,8 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         if (sorter == null || sorter->SortFunctionIndex != -1)
             return;
 
-        for (var i = 0u; i < sorter->Items.LongCount; i++)
+        foreach (ItemOrderModuleSorterItemEntry* item in sorter->Items)
         {
-            var item = sorter->Items[i].Value;
             if (item == null)
                 continue;
 
@@ -296,9 +295,8 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         if (sorter == null || sorter->SortFunctionIndex != -1)
             return;
 
-        for (var i = 0u; i < sorter->Items.LongCount; i++)
+        foreach (ItemOrderModuleSorterItemEntry* item in sorter->Items)
         {
-            var item = sorter->Items[i].Value;
             if (item == null)
                 continue;
 
@@ -330,7 +328,7 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         var adjustedPage = slotIndex / adjustedItemsPerPage;
         var adjustedSlotIndex = slotIndex % adjustedItemsPerPage;
 
-        if (_itemInventryRetainerWindowSizeType == 0 && TryGetAddon<AddonInventoryRetainer>("InventoryRetainer", out var addonInventoryRetainer) && addonInventoryRetainer->TabIndex != adjustedPage)
+        if (_itemInventryRetainerWindowSizeType == 0 && TryGetAddon<AddonInventoryRetainer>("InventoryRetainer"u8, out var addonInventoryRetainer) && addonInventoryRetainer->TabIndex != adjustedPage)
             return;
 
         if (!TryGetAddon<AddonInventoryGrid>("RetainerGrid" + (_itemInventryRetainerWindowSizeType == 0 ? "" : adjustedPage.ToString()), out var addon))
@@ -360,40 +358,40 @@ public unsafe partial class InventoryHighlight : ConfigurableTweak<InventoryHigh
         {
             case 0: // Inventory
             case 1: // InventoryLarge
-                ResetInventoryGrid("InventoryGrid0");
-                ResetInventoryGrid("InventoryGrid1");
-                ResetInventoryGrid("InventoryGrid2");
-                ResetInventoryGrid("InventoryGrid3");
+                ResetInventoryGrid("InventoryGrid0"u8);
+                ResetInventoryGrid("InventoryGrid1"u8);
+                ResetInventoryGrid("InventoryGrid2"u8);
+                ResetInventoryGrid("InventoryGrid3"u8);
                 break;
 
             case 2: // InventoryExpanded
-                ResetInventoryGrid("InventoryGrid0E");
-                ResetInventoryGrid("InventoryGrid1E");
-                ResetInventoryGrid("InventoryGrid2E");
-                ResetInventoryGrid("InventoryGrid3E");
+                ResetInventoryGrid("InventoryGrid0E"u8);
+                ResetInventoryGrid("InventoryGrid1E"u8);
+                ResetInventoryGrid("InventoryGrid2E"u8);
+                ResetInventoryGrid("InventoryGrid3E"u8);
                 break;
         }
 
-        if (TryGetAddon<AddonInventoryBuddy>("InventoryBuddy", out var addonInventoryBuddy))
+        if (TryGetAddon<AddonInventoryBuddy>("InventoryBuddy"u8, out var addonInventoryBuddy))
             ResetSlots(addonInventoryBuddy->Slots);
 
         switch (_itemInventryRetainerWindowSizeType)
         {
             case 0: // InventoryRetainer
-                ResetInventoryGrid("RetainerGrid");
+                ResetInventoryGrid("RetainerGrid"u8);
                 break;
 
             case 1: // InventoryRetainerLarge
-                ResetInventoryGrid("RetainerGrid0");
-                ResetInventoryGrid("RetainerGrid1");
-                ResetInventoryGrid("RetainerGrid2");
-                ResetInventoryGrid("RetainerGrid3");
-                ResetInventoryGrid("RetainerGrid4");
+                ResetInventoryGrid("RetainerGrid0"u8);
+                ResetInventoryGrid("RetainerGrid1"u8);
+                ResetInventoryGrid("RetainerGrid2"u8);
+                ResetInventoryGrid("RetainerGrid3"u8);
+                ResetInventoryGrid("RetainerGrid4"u8);
                 break;
         }
     }
 
-    private void ResetInventoryGrid(string addonName)
+    private void ResetInventoryGrid(ReadOnlySpan<byte> addonName)
     {
         if (TryGetAddon<AddonInventoryGrid>(addonName, out var addon))
             ResetSlots(addon->Slots);

@@ -34,7 +34,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 
     public override bool DrawConditions()
     {
-        return TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox", out var addon)
+        return TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox"u8, out var addon)
             && addon->IsVisible
             && _tweak.Categories.Count != 0;
     }
@@ -48,7 +48,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
             if (!_excelService.TryGetRow<ItemUICategory>(categoryId, out var category))
                 continue;
 
-            ImGui.Text(category.Name.ToDalamudString().ToString());
+            ImGui.Text(category.Name.ToString());
             ImGuiUtils.PushCursorY(3 * ImGuiHelpers.GlobalScale);
 
             using var indent = ImRaii.PushIndent();
@@ -59,7 +59,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
             }
         }
 
-        if (TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox", out var addon))
+        if (TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox"u8, out var addon))
         {
             Position = new(
                 addon->X + addon->GetScaledWidth(true) - 12,

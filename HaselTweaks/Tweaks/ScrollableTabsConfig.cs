@@ -3,6 +3,7 @@ namespace HaselTweaks.Tweaks;
 public class ScrollableTabsConfiguration
 {
     public bool Invert = true;
+    public bool SuppressQuickPanelSounds = true;
     public bool HandleAetherCurrent = true;
     public bool HandleArmouryBoard = true;
     public bool HandleAOZNotebook = true;
@@ -12,6 +13,7 @@ public class ScrollableTabsConfiguration
     public bool HandleInventoryBuddy = true;
     public bool HandleBuddy = true;
     public bool HandleCurrency = true;
+    public bool HandleGlassSelect = true;
     public bool HandleOrnamentNoteBook = true;
     public bool HandleFieldRecord = true;
     public bool HandleFishGuide = true;
@@ -34,6 +36,7 @@ public unsafe partial class ScrollableTabs
     {
         _configGui.DrawConfigurationHeader();
         _configGui.DrawBool("Invert", ref _config.Invert);
+        _configGui.DrawBool("SuppressQuickPanelSounds", ref _config.SuppressQuickPanelSounds);
         _configGui.DrawBool("HandleAetherCurrent", ref _config.HandleAetherCurrent);
         _configGui.DrawBool("HandleArmouryBoard", ref _config.HandleArmouryBoard);
         _configGui.DrawBool("HandleAOZNotebook", ref _config.HandleAOZNotebook);
@@ -43,6 +46,7 @@ public unsafe partial class ScrollableTabs
         _configGui.DrawBool("HandleInventoryBuddy", ref _config.HandleInventoryBuddy);
         _configGui.DrawBool("HandleBuddy", ref _config.HandleBuddy);
         _configGui.DrawBool("HandleCurrency", ref _config.HandleCurrency);
+        _configGui.DrawBool("HandleGlassSelect", ref _config.HandleGlassSelect);
         _configGui.DrawBool("HandleOrnamentNoteBook", ref _config.HandleOrnamentNoteBook);
         _configGui.DrawBool("HandleFieldRecord", ref _config.HandleFieldRecord);
         _configGui.DrawBool("HandleFishGuide", ref _config.HandleFishGuide);

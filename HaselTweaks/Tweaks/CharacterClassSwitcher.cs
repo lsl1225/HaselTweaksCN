@@ -1,7 +1,9 @@
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using SeVirtualKey = FFXIVClientStructs.FFXIV.Client.System.Input.SeVirtualKey;
 
 namespace HaselTweaks.Tweaks;
 
@@ -106,8 +108,8 @@ public unsafe partial class CharacterClassSwitcher : ConfigurableTweak<Character
         bool unk8)
     {
         if (_config.DisableTooltips && (
-            (TryGetAddon("CharacterClass", out AtkUnitBase* unitBase) && unitBase->Id == parentId) ||
-            (TryGetAddon("PvPCharacter", out unitBase) && unitBase->Id == parentId)))
+            (TryGetAddon("CharacterClass"u8, out AtkUnitBase* unitBase) && unitBase->Id == parentId) ||
+            (TryGetAddon("PvPCharacter"u8, out unitBase) && unitBase->Id == parentId)))
         {
             return;
         }
@@ -356,9 +358,11 @@ public unsafe partial class CharacterClassSwitcher : ConfigurableTweak<Character
         if (gearsetModule == null)
             return;
 
+        var permittedGearsetCount = InventoryManager.Instance()->GetPermittedGearsetCount();
+
         // loop through all gearsets and find the one matching classJobId with the highest avg itemlevel
         var selectedGearset = (Id: -1, ItemLevel: -1);
-        for (var id = 0; id < 100; id++)
+        for (var id = 0; id < permittedGearsetCount; id++)
         {
             // skip if invalid
             if (!gearsetModule->IsValidGearset(id))

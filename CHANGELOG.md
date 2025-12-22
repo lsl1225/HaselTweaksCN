@@ -1,5 +1,44 @@
 # Changelog
 
+## [40.2.1] (2025-12-21)
+
+### Auto-select Soil and Seed
+
+- **Fixed:** Incorrectly inserted planter seeds in garden patches.
+
+## [40.2.0] (2025-12-20)
+
+### Scrollable Tabs
+
+- **Added:** An option to disable sound effects when scrolling tabs in the Command Panel.
+
+## [40.1.1] (2025-12-19)
+
+### Outfit Glamour Try On
+
+- **Fixed:** Context menu entry didn't work correctly due to offset changes.
+
+## [40.1.0] (2025-12-18)
+
+Update for 7.4.
+
+### Commands
+
+- **Updated:** `/whatbarding` can now print the bardings of the targets mount.
+
+### Gear Set Grid
+
+- **Added:** The Average Item Level is now shown in the tooltip of the Gear Set entry.
+
+### Glamour Dresser Keyboard Navigation
+
+- **Updated:** Selection now also works when the "Glamour Plate Creation" window is focused.
+
+### Scrollable Tabs
+
+- **Note:** The new Command Panel has this feature built-in already. This is not happening because of this tweak and I am not responsible for the clicky sounds it makes.
+- **Added:** Scrolling in the Facewear window is now supported.
+
 ## [40.0.3] (2025-10-28)
 
 ### Commands
@@ -2256,6 +2295,10 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
 [unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev
+[40.2.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.2.0...v40.2.1
+[40.2.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.1.1...v40.2.0
+[40.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.1.0...v40.1.1
+[40.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.0.3...v40.1.0
 [40.0.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.0.2...v40.0.3
 [40.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.0.1...v40.0.2
 [40.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.0.0...v40.0.1
