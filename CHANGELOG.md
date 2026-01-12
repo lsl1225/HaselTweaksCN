@@ -1,5 +1,50 @@
 # Changelog
 
+## [41.0.0] (2026-01-03)
+
+Happy new year!
+
+### Tweak reworked: Bigger Character Previews
+
+Previously called Bigger Item Dyeing Preview. The config was not migrated due to new config options.
+
+- **Added:** Support for the windows Character, Examine and Fitting Room.
+- **Added:** Config options to increase the sharpness of the preview images.  
+  I think it disables some kind of downscaling. It's disabled for the Character window by default, because I think it looks worse there when it's on. But it's your choice!
+
+## [40.3.2] (2025-12-31)
+
+### HaselTweaks
+
+- **Fixed:** Plugin windows were not correctly attached to game windows when the multi-monitor feature is active in Dalamud and the game is played in windowed mode.
+
+## [40.3.1] (2025-12-30)
+
+### HaselTweaks
+
+- **Fixed:** The French translation of the chat command help message contained an unprocessed macro code.
+- **Fixed:** A debug subcommand was incorrectly enabled in release builds and disabled in debug builds. lol
+
+## [40.3.0] (2025-12-30)
+
+### HaselTweaks
+
+- **Updated:** New chat command handler system that supports subcommands (not used here yet) and printing out a help message.
+- **Updated:** Reworked the tweaks Character Class Switcher, Enhanced Isleworks Agenda, and Simple Aethernet List to use Dalamuds IAddonLifecycle.
+- **Updated:** Copied a new version of Dalamuds FuzzyMatch over to the plugin, used for the search bar in the Enhanced Isleworks Agenda tweak.
+
+### Glamour Dresser Armoire Alert
+
+- **Added:** Armoire items stored in Outfits are now detected.
+- **Fixed:** The window may not have appeared immediately when the Glamour Dresser was opened. Reworked the update logic to wait for it to be fully loaded.
+- **Fixed:** Withdrawing an item might have failed. It now preloads the item row in the game, so the new checks have data to work off of.
+
+## [40.2.2] (2025-12-26)
+
+### Portrait Helper
+
+- **Fixed:** The portrait update preview window was displayed due to a mismatched agent in ClientStructs.
+
 ## [40.2.1] (2025-12-21)
 
 ### Auto-select Soil and Seed
@@ -2295,6 +2340,11 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
 [unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/main...dev
+[41.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.3.2...v41.0.0
+[40.3.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.3.1...v40.3.2
+[40.3.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.3.0...v40.3.1
+[40.3.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.2.2...v40.3.0
+[40.2.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.2.1...v40.2.2
 [40.2.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.2.0...v40.2.1
 [40.2.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.1.1...v40.2.0
 [40.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.1.0...v40.1.1

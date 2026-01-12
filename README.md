@@ -53,9 +53,16 @@ Automatically selects the first available soil and seed from your inventory when
 
 Adds a configurable keybind to toggle the background music, in addition to the game's existing keybind option to toggle the sound. No more `/bgm` macro. Works in cutscenes.
 
-### Bigger Item Dyeing Preview
+### Bigger Character Previews
 
-Increases the size of the character preview in the "Item Dyeing" window.
+Increases the size of the character preview in the following windows:
+
+- Character
+- Examine
+- Fitting Room
+- Item Dyeing
+
+Also provides config options to make preview images sharper.
 
 ### Cast Bar Aetheryte Names
 
@@ -94,7 +101,7 @@ Available Commands:
 - `/whatemote`  
   Target a player and execute the command to see which emote your target is currently executing.
 - `/whatbarding`  
-  Target a players chocobo companion and execute the command to see what barding it is wearing.
+  Target a players chocobo companion or mounted player and execute the command to see what barding the chocobo is wearing.
 - `/glamourplate <id>`  
   This shortcut command executes the "/gearset change" command with the current gear set id and the given glamour plate id (1-20).
 
@@ -352,6 +359,7 @@ Allows the mouse wheel to switch tabs (like with LB/RB on controllers) in the fo
 - Chocobo Saddlebag
 - Companion
 - Currency
+- Facewear
 - Fashion Accessories
 - Field Records
 - Fish Guide
@@ -366,6 +374,8 @@ Allows the mouse wheel to switch tabs (like with LB/RB on controllers) in the fo
 - Retainer Inventory
 - Shared FATE
 - Sightseeing Log
+
+The Command Panel already includes this functionality and instead has an option to disable its tab-scrolling sound effects.
 
 ### Search the markets
 

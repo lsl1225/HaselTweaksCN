@@ -1,7 +1,8 @@
 using Dalamud.Interface.Textures;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.Exd;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace HaselTweaks.Windows;
 
@@ -10,6 +11,7 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 {
     private static readonly Vector2 IconSize = new(34);
 
+    private readonly ILogger<GlamourDresserArmoireAlertWindow> _logger;
     private readonly ITextureProvider _textureProvider;
     private readonly ExcelService _excelService;
     private readonly TextService _textService;
@@ -33,10 +35,17 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
     }
 
     public override bool DrawConditions()
+        => IsAddonOpen("MiragePrismPrismBox"u8) && _tweak.Categories.Count != 0;
+
+    public override void PreDraw()
     {
-        return TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox"u8, out var addon)
-            && addon->IsVisible
-            && _tweak.Categories.Count != 0;
+        if (!TryGetAddon<AtkUnitBase>("MiragePrismPrismBox"u8, out var addon))
+            return;
+
+        var width = addon->GetScaledWidth(true);
+        var offset = new Vector2(width - 12, 9);
+
+        Position = ImGui.GetMainViewport().Pos + addon->Position + offset;
     }
 
     public override void Draw()
@@ -53,28 +62,20 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
 
             using var indent = ImRaii.PushIndent();
 
-            foreach (var (itemIndex, (item, isHq)) in categoryItems)
+            foreach (var item in categoryItems)
             {
-                DrawItem(itemIndex, item, isHq);
+                DrawItem(item);
             }
-        }
-
-        if (TryGetAddon<AddonMiragePrismPrismBox>("MiragePrismPrismBox"u8, out var addon))
-        {
-            Position = new(
-                addon->X + addon->GetScaledWidth(true) - 12,
-                addon->Y + 9
-            );
         }
     }
 
-    public void DrawItem(uint itemIndex, Item item, bool isHq)
+    public void DrawItem(ItemHandle item)
     {
-        using var id = ImRaii.PushId($"Item{item.RowId}");
+        using var id = ImRaii.PushId($"Item{item.ItemId}");
 
         using (var group = ImRaii.Group())
         {
-            _textureProvider.DrawIcon(new GameIconLookup(item.Icon, isHq), IconSize * ImGuiHelpers.GlobalScale);
+            _textureProvider.DrawIcon(new GameIconLookup(item.Icon, item.IsHighQuality), IconSize * ImGuiHelpers.GlobalScale);
 
             ImGui.SameLine();
 
@@ -87,29 +88,43 @@ public unsafe partial class GlamourDresserArmoireAlertWindow : SimpleWindow
                     : ImGuiSelectableFlags.None,
                 ImGuiHelpers.ScaledVector2(ImGui.GetContentRegionAvail().X, IconSize.Y)))
             {
-                RestoreItem(itemIndex);
+                RestoreItem(item);
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ExdModule.GetItemRowById(item); // make sure item is loaded, otherwise RestorePrismBoxItem will fail
             }
 
             ImGui.SetCursorPos(pos + new Vector2(
                 ImGui.GetStyle().ItemInnerSpacing.X,
                 IconSize.Y * ImGuiHelpers.GlobalScale / 2f - ImGui.GetTextLineHeight() / 2f - 1));
 
-            ImGui.Text(_textService.GetItemName(item.RowId).ToString());
+            ImGui.Text(item.Name.ToString());
         }
 
         _imGuiContextMenuService.Draw("ItemContextMenu", builder =>
         {
             builder
-                .AddTryOn(item.RowId)
-                .AddItemFinder(item.RowId)
-                .AddCopyItemName(item.RowId)
-                .AddOpenOnGarlandTools("item", item.RowId)
-                .AddItemSearch(item.RowId);
+                .AddTryOn(item)
+                .AddItemFinder(item)
+                .AddCopyItemName(item)
+                .AddOpenOnGarlandTools("item", item)
+                .AddItemSearch(item);
         });
     }
 
-    private void RestoreItem(uint itemIndex)
+    private void RestoreItem(ItemHandle item)
     {
-        IsUpdatePending = MirageManager.Instance()->RestorePrismBoxItem(itemIndex);
+        var mirageManager = MirageManager.Instance();
+        if (!mirageManager->PrismBoxLoaded)
+            return;
+
+        var itemIndex = mirageManager->PrismBoxItemIds.IndexOf(item);
+        if (itemIndex == -1)
+            return;
+
+        _logger.LogDebug("Restoring item {index}", itemIndex);
+        IsUpdatePending = mirageManager->RestorePrismBoxItem((uint)itemIndex);
     }
 }
