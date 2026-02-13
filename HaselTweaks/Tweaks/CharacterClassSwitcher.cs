@@ -82,7 +82,7 @@ public unsafe partial class CharacterClassSwitcher : ConfigurableTweak<Character
             return;
 
         ref var tabIndex = ref values[1];
-        if (tabIndex.Type != ValueType.Int)
+        if (!tabIndex.IsInt)
             return;
 
         tabIndex.Int = 2;
@@ -206,11 +206,13 @@ public unsafe partial class CharacterClassSwitcher : ConfigurableTweak<Character
             if (isClick && !UIInputData.Instance()->IsKeyDown(SeVirtualKey.SHIFT))
             {
                 SwitchClassJob(8 + (uint)eventParam - 24);
+                args.AtkEventType = 0;
                 return;
             }
         }
 
-        ProcessEvents(component->OwnerNode, imageNode, eventType, eventData);
+        if (ProcessEvents(component->OwnerNode, imageNode, eventType, eventData))
+            args.AtkEventType = 0;
     }
 
     #endregion
@@ -286,7 +288,8 @@ public unsafe partial class CharacterClassSwitcher : ConfigurableTweak<Character
         if (!isUnlocked)
             return;
 
-        ProcessEvents(entry->Base->OwnerNode, entry->Icon, eventType, eventData);
+        if (ProcessEvents(entry->Base->OwnerNode, entry->Icon, eventType, eventData))
+            args.AtkEventType = 0;
     }
 
     #endregion

@@ -1,5 +1,52 @@
 # Changelog
 
+## [41.1.5] (2026-02-06)
+
+### HaselTweaks
+
+- **Changed:** Reworked some internal item-related code. If you notice anything weird, please report it. Thanks!
+- **Fixed:** A debug subcommand was accidentally enabled in release builds and was additionally causing a harmless error when the plugin unloaded.
+
+## [41.1.4] (2026-01-31)
+
+### Scrollable Tabs
+
+- **Fixed:** Scrolling in the Character window while Classes/Jobs or Repute was disabled would not work as intended.
+
+## [41.1.3] (2026-01-30)
+
+### Character Class Switcher
+
+- **Fixed:** Switching to a crafter job would unintentionally open the Desynthesis Skill window briefly.
+
+### Scrollable Tabs
+
+- **Fixed:** Scrolling on the character preview in the Character window would unintentionally scroll the tabs.
+
+## [41.1.2] (2026-01-30)
+
+### Cosmic Research in Duty List
+
+- **Fixed:** Latest Dataset wasn't taken into account. (Thanks to @Scrxtchy)
+
+## [41.1.1] (2026-01-28)
+
+- Updated ClientStructs for Patch 7.41.
+- Simplified code for Scrollable Tabs.
+
+## [41.1.0] (2026-01-17)
+
+### Glamour Dresser Armoire Alert
+
+- **Added:** A new config option to ignore Armoire-qualified items that are part of an outfit.
+
+## [41.0.2] (2026-01-16)
+
+### Hide MSQ Complete
+
+- **Fixed:** If no main scenario quest is displayed the gamepad input hint is now hidden.
+- **Fixed:** If no main scenario or job quest is displayed the scenario guide is no longer focusable with a gamepad.
+
 ## [41.0.1] (2026-01-12)
 
 ### HaselTweaks
@@ -2354,7 +2401,14 @@ Refreshes the material list and recipe tree when you've crafted or gathered an i
 
 Opens duty finder for the duty you clicked on in the Wondrous Tails Journal.
 
-[unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.0.1...main
+[unreleased]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.5...main
+[41.1.5]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.4...v41.1.5
+[41.1.4]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.3...v41.1.4
+[41.1.3]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.2...v41.1.3
+[41.1.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.1...v41.1.2
+[41.1.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.1.0...v41.1.1
+[41.1.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.0.2...v41.1.0
+[41.0.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.0.1...v41.0.2
 [41.0.1]: https://github.com/Haselnussbomber/HaselTweaks/compare/v41.0.0...v41.0.1
 [41.0.0]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.3.2...v41.0.0
 [40.3.2]: https://github.com/Haselnussbomber/HaselTweaks/compare/v40.3.1...v40.3.2
