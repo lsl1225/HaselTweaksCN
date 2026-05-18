@@ -136,7 +136,8 @@ public unsafe partial class CosmicResearchTodo : ConfigurableTweak<CosmicResearc
                 numberArray->DutyObjectiveCount = 0;
                 numberArray->DutyCompletedObjectives = 0;
 
-                var score = wksManager->State.Scores[toolClassId - 1];
+                // FIXME: revert to State.Scores after cs updated.
+                var score = wksManager->Scores[toolClassId - 1];
                 var max = score switch
                 {
                     >= 150000 => 500000,
