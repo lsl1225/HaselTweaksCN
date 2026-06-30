@@ -3,7 +3,7 @@
 	url = https://github.com/Haselnussbomber/HaselCommon.git
 [submodule "FFXIVClientStructs"]
 	path = FFXIVClientStructs
-	url = https://github.com/aers/FFXIVClientStructs.git
+	url = git@github.com:ottercorp/FFXIVClientStructs.git
 [submodule "HaselTweaks.Native/lib/libdeflate"]
 	path = HaselTweaks.Native/lib/libdeflate
 	url = https://github.com/ebiggers/libdeflate.git
