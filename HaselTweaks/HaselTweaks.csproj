@@ -12,6 +12,8 @@
 For a detailed description please visit the plugins repository or open /haseltweaks when installed.</Description>
     <Tags>Achievement Link Tooltip;Aether Current Helper;Always Face Camera;Auto Sorter;Auto-open Recipe;Auto-select Soil and Seed;Background Music Keybind;Bigger Character Previews;Armoire Quick Store;Cast Bar Aetheryte Names;Character Class Switcher;Character Reputation Teleport;Commands;/itemlink;/whatmount;/whatemote;/whatbarding;/glamourplate;Companion Color Preview;Cosmic Research in Duty List;Custom Chat Message Formats;Custom Chat Timestamp;DTR;Busy status;FPS;Instance number;Disable Reward Popups;Enhanced Crafting Log;Remember search history;Enhanced Experience Bar;Companion Bar;Island Sanctuary Bar;PvP Series Bar ;Enhanced Fitting Room;Keep Facewear on;Enhanced Glamour Dresser;Outfit Glamour Creation;Enhanced Hunting Log;Show Incomplete;Enhanced Isleworks Agenda;Search Bar;Enhanced Login/Logout;Skip Logo;Show pets in character selection;Play emote in character selection;Preload territory when queued;Clear tell history on logout;Enhanced Material List;Auto-refresh Material List/Recipe Tree;Restore Material List on Login;"Search for Item by Crafting Method" context menu entry;Enhanced Target Info;Mounted status;Fashion Accessory status;Remove leading zero in HP under 10%;Expert Deliveries;Fast Mouse Click Fix;Flash Taskbar;Flash on alarm;Flash on combat;Flash on synthesis completion;Fix Inventory Open Tab;Forced Cutscene Sounds;Gear Set Grid;Glamour Dresser Alert;Glamour Dresser Keyboard Navigation;Hide MSQ Complete;Inventory Highlight;Keep Screen Awake;Lock Window Position;Market Board Item Preview;Material Allocation;Minimap Adjustments;Square Collision (for custom minimap mask textures);Default Opacity;Hover Opacity;Hide Coordinates;Hide Weather;Hide Time Indicator;Hide Cardinal Directions;Portrait Helper;Fine-grained controls for editing portraits;Import/Export preset codes;Load/Save presets;Alignment Tool;Prevent Reel-In from Movement;Reveal Duty Requirements;Safer Market Board Price Check;Search the markets;Simple Aethernet List</Tags>
     <CanUnloadAsync>true</CanUnloadAsync>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <!-- Build settings -->
@@ -29,19 +31,11 @@ For a detailed description please visit the plugins repository or open /haseltwe
 
   <!-- Assets -->
   <ItemGroup>
-    <EmbeddedResource Include="Assets\Logo.png" />
+    <None Include="Assets\Logo.png" Link="Logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Translations.json" Link="$(AssemblyName).Translations.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="LICENSES.md" Link="LICENSES.md" CopyToOutputDirectory="PreserveNewest" />
+
     <None Condition="'$(Configuration)' == 'Debug'" Include="Assets\Icon.png" Link="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <!-- Translations -->
-  <ItemGroup Condition="Exists('Translations.json')">
-    <EmbeddedResource Include="Translations.json" />
-  </ItemGroup>
-
-  <!-- Licenses -->
-  <ItemGroup Condition="Exists('LICENSES.md')">
-    <EmbeddedResource Include="LICENSES.md" />
-    <None Include="LICENSES.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- References to Dalamud dependencies -->
@@ -52,11 +46,11 @@ For a detailed description please visit the plugins repository or open /haseltwe
 
   <!-- NuGet dependencies -->
   <ItemGroup>
-    <PackageReference Include="AutoCtor" Version="3.1.0" PrivateAssets="all" ExcludeAssets="compile;runtime" />
-    <PackageReference Include="Injectio" Version="6.1.0" PrivateAssets="all" />
+    <PackageReference Include="AutoCtor" Version="4.0.0" PrivateAssets="all" ExcludeAssets="compile;runtime" />
+    <PackageReference Include="Injectio" Version="6.2.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298" PrivateAssets="All" />
-    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.360" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.16.1" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- FFXIVClientStructs -->
@@ -70,6 +64,10 @@ For a detailed description please visit the plugins repository or open /haseltwe
     <ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="True" />
     <ProjectReference Include="..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="True" />
   </ItemGroup>
+
+  <Target Name="DeleteCSXmlDocs" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and Exists('$(TargetDir)FFXIVClientStructs.xml')">
+    <Delete Files="$(TargetDir)FFXIVClientStructs.xml" />
+  </Target>
 
   <!-- HaselCommon -->
   <ItemGroup>
